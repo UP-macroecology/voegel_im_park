@@ -1,0 +1,42 @@
+@media (min-width:1000px) {
+
+    .InjectedComponents[data-position="mobile-sidebar:end"],
+    .InjectedComponents[data-position="mobile-sidebar:start"] {
+        display: block
+    }
+}
+
+.external-link-icon {
+    margin-left: 3px
+}
+
+.header-nav {
+    display: flex;
+    align-items: center;
+    font-size: 1rem
+}
+
+.image-row {
+  display: flex;
+  justify-content: space-between; /* this will add equal space between each image */
+}
+
+.Sidebar {
+  background-image: url('images/220111-Logo-HKS.svg');
+  background-repeat: no-repeat;
+  background-position: center top;
+  margin-top: 1em;
+  background-size: 400px 150px;
+}
+#toc {
+  margin-top: 180px;
+}
+
+@media (max-width:1000px) {
+    .header-nav {
+        display: block
+    }
+}
+
+
+

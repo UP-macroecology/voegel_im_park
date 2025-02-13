@@ -204,7 +204,7 @@ Auf dieser Website veranschaulichen wir, welche Vogelarten am häufigsten in den
 
 Für die semi-automatisierte Erfassung von Vogelarten nutzen wir Audiodetektoren, die laufen wenn die Vögel besonders aktiv sind, morgens (3 - 4 Uhr) und abends (19 - 20 Uhr) im Frühling (April - Mai). Diesen Daten werden dann durch Bestimmungsalgorithmen Vogelarten zu geordnet. Um die Ergebnisse der Algorithmen als "Detektionen" zu werten, stellen wir strenge Kriterien an sie. So nutzen wir beispielsweise nur Daten, bei denen sich die Algorithmen sicher sind und die heimische und regelmäßig erkannte Arten umfassen. Eine Detektion bedeutet, dass eine Art an einem Standort innerhalb von 10 Minuten mindestens einmal sicher erkannt wurde.
 
-Zwar können uns die Ergebnisse keine Auskunft darüber geben, wieviele Vögel genau da gesungen haben, aber sie helfen uns zu erkennen welche Arten zu welchen Zeiten aktiv waren. Darüber hinaus zeigen sie uns, wie sich die verschiedenen Bereiche im Park hinsichtlich ihrer Vogelgemeinschaft unterscheiden. Die folgende Karte veranschaulicht die Standorte im Park Sanssouci, die wir akustisch betrachten.  
+Zwar können uns die Ergebnisse keine Auskunft darüber geben, wieviele Vögel genau da gesungen haben, aber sie helfen uns zu erkennen, welche Arten zu welchen Zeiten aktiv waren. Darüber hinaus zeigen sie uns, wie sich die verschiedenen Bereiche im Park hinsichtlich ihrer Vogelgemeinschaft unterscheiden. Die folgende Karte veranschaulicht die Standorte im Park Sanssouci, die wir akustisch betrachten.  
 
 ```{r out.width="600px", text.align="center"}
 box_locs_map = box_locs %>% group_by(group_name) %>% mutate(lat_group = mean(lat), lon_group = mean(lon))

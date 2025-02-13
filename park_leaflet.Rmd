@@ -1,6 +1,6 @@
 ---
 title: "Vögel im Park Sanssouci"
-subtitle: "Automatische Vogelbestimmung im Park Sanssouci"
+subtitle: "Automatisierte Bestimmung von Vogelgesängen im Park Sanssouci"
 date: '`r format(Sys.time(), "%d %B, %Y")`'
 lang: "de"
 output:
@@ -38,9 +38,16 @@ library(lubridate)
 
 # data
 bird_detections = fread("tables/bird_detections_TOP55_20250124.csv")
+bird_detections = bird_detections %>%
+  filter(month(date.time) %in% c(4,5),
+         hour(date.time) %in% c(3,4,19,20))
+
 box_locs = fread("tables/Nest_boxed_metadata.csv")
 
 artenliste_raw = fread("tables/bird_obs_TOP55_20250130.csv") #bird_obs2025
+artenliste_raw = artenliste_raw %>%
+  filter(month(obs.temp.res) %in% c(4,5))
+
 translation = read.csv2("tables/species_meta_dt.csv", sep=",")
 
 artenliste_raw$spec[artenliste_raw$spec=="carcro1"] = "hoocro1"
@@ -134,12 +141,14 @@ year.plot = function(x){
         plot.margin = margin(0.3,1,0.3,0.3, "cm"),
         plot.title = element_text(hjust = 0.5,  size = 16, color = "grey40"), 
         legend.title = element_blank(), 
-        legend.position = c(0.9, 0.8), 
+        legend.position = c(0.2, 0.95), 
         legend.text = element_text(size=12, color = "grey40"),
+        legend.spacing.x = unit(.1, 'cm'),
         legend.background = element_rect(fill = 'transparent'),
         axis.title = element_text(size = 14, color = "grey40"),
         axis.text = element_text(size = 12, color = "grey40"))+
   scale_fill_manual(values=year.cols) +
+  guides(fill = guide_legend(nrow = 1))+
   labs(y= "Anzahl Detektionen", x = "", title = "Akustische Frühlingsaktivität")
 }
 
@@ -168,13 +177,15 @@ day.plot = function(x){
         plot.margin = margin(0.3,1,0.3,0.3, "cm"),
         plot.title = element_text(hjust = 0.5,  size = 16, color = "grey40"), 
         legend.title = element_blank(), 
-        legend.position = c(0.9, 0.8), 
+        legend.position = c(0.2, 0.95), 
         legend.text = element_text(size=12, color = "grey40"),
+        legend.spacing.x = unit(.1, 'cm'),
         legend.background = element_rect(fill = 'transparent'),
         axis.title = element_text(size = 14, color = "grey40"),
         axis.text = element_text(size = 12, color = "grey40"))+
   scale_fill_manual(values=year.cols) +
   scale_x_datetime(date_breaks = "60 mins", date_labels = "%H:%M" )+
+      guides(fill = guide_legend(nrow = 1))+
  labs(y= "Anzahl Detektionen", x = "Uhrzeit", title = "Akustische Tagesaktivität")
 }
 ```
@@ -184,12 +195,16 @@ day.plot = function(x){
 
 Die Biodiversität - also die Vielfalt von Genen, Arten und Ökosystemen - steckt in der Krise. Monitoring, also das regelmäßige Beobachten, Überwachen und Messen der Biodiversität spielt eine zentrale Rolle, um zu verstehen welche Aspekte der Biodiversität besonders durch globalen Wandel betroffen sind und wie diese auf Schutz- und Pflegemaßnahmen reagieren. Wie können wir Monitoring verbessern oder sogar automatisieren? Ein Beispiel mit großem Potential sind Audiodetektoren, die Tierstimmen aufzeichnen und mit Hilfe künstlicher Intelligenz am Computer mit bekannten Stimmen vergleichen und so die Tierarten bestimmen.
 
-In diesem Pilot-Projekt im Park Sanssouci testen wir, die Arbeitsgruppe [Ökologie und Makroökologie](https://www.uni-potsdam.de/de/ibb-macroecology/index) der Universität Potsdam, den Nutzen und die Qualität von automatischen Monitoringsystemen für die Erfassung von Vögeln. Gleichzeitig benutzen wir die Systeme, um wissenschaftliche Fragestellungen in Bezug auf räumliche und zeitliche Dynamiken von Biodiversität anzugehen und den Einfluss verschiedener Umwelt- und Störfaktoren zu erforschen. 
+In diesem Pilot-Projekt im Park Sanssouci testen wir, die Arbeitsgruppe <a href="https://www.uni-potsdam.de/de/ibb-macroecology/index" target="_blank"> Ökologie und Makroökologie </a> der Universität Potsdam, den Nutzen und die Qualität von automatisierten Monitoringsystemen für die Erfassung von Vögeln. Gleichzeitig benutzen wir die Systeme, um wissenschaftliche Fragestellungen zu Veränderungen in Biodiversitätsmustern anzugehen und den Einfluss verschiedener Umwelt- und Störfaktoren zu erforschen. 
 
-Auf dieser Website veranschaulichen wir, welche Vogelarten am häufigsten in den letzten Jahren an verschiedenen Standorten des Parks detektiert wurden und wie deren Aktivität im Park ist.
+Auf dieser Website veranschaulichen wir, welche Vogelarten am häufigsten in den letzten Jahren an verschiedenen Standorten des Parks detektiert wurden und wie deren Aktivität war.
 
 
-# Standorte im Park Sanssouci
+# Erfassung im Park Sanssouci
+
+Für die semi-automatisierte Erfassung von Vogelarten nutzen wir Audiodetektoren, die laufen wenn die Vögel besonders aktiv sind, morgens (3 - 4 Uhr) und abends (19 - 20 Uhr) im Frühling (April - Mai). Diesen Daten werden dann durch Bestimmungsalgorithmen Vogelarten zu geordnet. Um die Ergebnisse der Algorithmen als "Detektionen" zu werten, stellen wir strenge Kriterien an sie. So nutzen wir beispielsweise nur Daten, bei denen sich die Algorithmen sicher sind und die heimische und regelmäßig erkannte Arten umfassen. Eine Detektion bedeutet, dass eine Art an einem Standort innerhalb von 10 Minuten mindestens einmal sicher erkannt wurde.
+
+Zwar können uns die Ergebnisse keine Auskunft darüber geben, wieviele Vögel genau da gesungen haben, aber sie helfen uns zu erkennen welche Arten zu welchen Zeiten aktiv waren. Darüber hinaus zeigen sie uns, wie sich die verschiedenen Bereiche im Park hinsichtlich ihrer Vogelgemeinschaft unterscheiden. Die folgende Karte veranschaulicht die Standorte im Park Sanssouci, die wir akustisch betrachten.  
 
 ```{r out.width="600px", text.align="center"}
 box_locs_map = box_locs %>% group_by(group_name) %>% mutate(lat_group = mean(lat), lon_group = mean(lon))
@@ -223,7 +238,9 @@ leaflet(width = "95%", height = 500) %>%
 
 # Artenlisten 
 
-## Artenliste für den gesamten Park  {.tabset}
+Die folgenden Listen zeigen jeweils die 10 Arten, die am häufigsten detektiert wurden. Sie sind nach Jahr und nach Standort aufgeteilt.
+
+## Artenliste aller Standorte  {.tabset}
 ### 2024
 ```{r Artenliste2024, results="asis",echo=FALSE}
 artenliste = left_join(artenliste_raw, box_locs[,c(1,5)])  %>%
@@ -234,11 +251,11 @@ artenliste = left_join(artenliste_raw, box_locs[,c(1,5)])  %>%
 artenliste$link = paste0(" <br><a href =#", tolower(artenliste$deutsch), ">", artenliste$deutsch,"</a>")
   no.info.specs = which(!artenliste$deutsch %in% included.specs)
   artenliste$link[no.info.specs] = artenliste$deutsch[no.info.specs] 
-artenliste$ebird.species = paste0("<i>", artenliste$ebird.species, "<i>")
+artenliste$ebird.species = paste0("<i>", artenliste$ebird.species, "</i>")
 colnames(artenliste) = c("spec", "Anzahl Detektionen", "Art (Wisschenschaftlich)", "Art (Deutsch)", "Art (Deutsch)")
 artenliste = artenliste[, c(5,3,2)]
 
-knitr::kable(artenliste[1:11,])
+knitr::kable(artenliste[1:10,])
 ```
 
 ### 2023
@@ -251,11 +268,11 @@ artenliste = left_join(artenliste_raw, box_locs[,c(1,5)])  %>%
 artenliste$link = paste0(" <br><a href =#", tolower(artenliste$deutsch), ">", artenliste$deutsch,"</a>")
   no.info.specs = which(!artenliste$deutsch %in% included.specs)
   artenliste$link[no.info.specs] = artenliste$deutsch[no.info.specs] 
-artenliste$ebird.species = paste0("<i>", artenliste$ebird.species, "<i>")
+artenliste$ebird.species = paste0("<i>", artenliste$ebird.species, "</i>")
 colnames(artenliste) = c("spec", "Anzahl Detektionen", "Art (Wisschenschaftlich)", "Art (Deutsch)", "Art (Deutsch)")
 artenliste = artenliste[, c(5,3,2)]
 
-knitr::kable(artenliste[1:11,])
+knitr::kable(artenliste[1:10,])
 ```
 
 ### 2022
@@ -268,11 +285,11 @@ artenliste = left_join(artenliste_raw, box_locs[,c(1,5)])  %>%
 artenliste$link = paste0(" <br><a href =#", tolower(artenliste$deutsch), ">", artenliste$deutsch,"</a>")
   no.info.specs = which(!artenliste$deutsch %in% included.specs)
   artenliste$link[no.info.specs] = artenliste$deutsch[no.info.specs] 
-artenliste$ebird.species = paste0("<i>", artenliste$ebird.species, "<i>")
+artenliste$ebird.species = paste0("<i>", artenliste$ebird.species, "</i>")
 colnames(artenliste) = c("spec", "Anzahl Detektionen", "Art (Wisschenschaftlich)", "Art (Deutsch)", "Art (Deutsch)")
 artenliste = artenliste[, c(5,3,2)]
 
-knitr::kable(artenliste[1:11,])
+knitr::kable(artenliste[1:10,])
 ```
 
 
@@ -411,7 +428,7 @@ knitr::kable(artenliste[1:10,])
 # Artensteckbriefe
 ## Ringeltaube
 
-```{r image_Ringeltaube, fig.cap = "Ringeltaube (Columba palumbus). Foto von [Patrick Schulze](https://www.pexels.com/photo/two-pigeons-perching-on-a-branch-23383222/)", out.width="60%" }
+```{r image_Ringeltaube, fig.cap = "Ringeltaube (Columba palumbus). Foto von [Patrick Schulze](https://www.pexels.com/photo/two-pigeons-perching-on-a-branch-23383222/)", out.width="50%" }
 knitr::include_graphics("images/Columba-palumbus.webp", dpi = 75)
 ```
 
@@ -491,7 +508,7 @@ Mehr Infos zum Trauerschnäpper findet ihr hier:
 
 
 ## Kohlmeise
-```{r image_Kohlmeise, fig.cap = "Kohlmeise (Parus major). Foto von [Monique Laats](https://www.pexels.com/photo/black-and-gray-bird-on-body-of-water-736520/)", out.width="60%" }
+```{r image_Kohlmeise, fig.cap = "Kohlmeise (Parus major). Foto von [Monique Laats](https://www.pexels.com/photo/black-and-gray-bird-on-body-of-water-736520/)", out.width="75%" }
 knitr::include_graphics("images/Parus-major.webp", dpi = 75)
 ```
 
@@ -550,7 +567,7 @@ Mehr Infos zur Amsel findet ihr hier:
 
 ## Waldkauz
 
-```{r image_Waldkauz, fig.cap = "Waldkauz (Strix aluco). Foto von [D H J](https://www.pexels.com/photo/owl-sitting-in-tree-nest-10989038/)" , out.width="75%"}
+```{r image_Waldkauz, fig.cap = "Waldkauz (Strix aluco). Foto von [D H J](https://www.pexels.com/photo/owl-sitting-in-tree-nest-10989038/)" , out.width="50%"}
 knitr::include_graphics("images/Strix-aluco.webp", dpi = 75)
 ```
 
@@ -733,7 +750,7 @@ Mehr Infos zur Nachtigall findet ihr hier:
 
 
 ## Buntspecht
-```{r image_Buntspecht, fig.cap = "Buntspecht (Dendrocopos major). Foto von [John Napier](https://www.pexels.com/photo/black-and-white-bird-on-brown-tree-branch-10286262/)", out.width="60%" }
+```{r image_Buntspecht, fig.cap = "Buntspecht (Dendrocopos major). Foto von [John Napier](https://www.pexels.com/photo/black-and-white-bird-on-brown-tree-branch-10286262/)", out.width="75%" }
 knitr::include_graphics("images/Dendrocopos-major.webp", dpi = 75)
 ```
 
@@ -872,7 +889,7 @@ Mehr Infos zum Gartenrotschwanz findet ihr hier:
 
 ## Grauschnäpper
 
-```{r image_Grauschnäpper, fig.cap = "Grauschnäpper (Muscicapa striata). Foto von [Q L](https://www.pexels.com/photo/spotted-flycatcher-on-a-wooden-perch-in-forest-28676626/)", out.width="60%" }
+```{r image_Grauschnäpper, fig.cap = "Grauschnäpper (Muscicapa striata). Foto von [Q L](https://www.pexels.com/photo/spotted-flycatcher-on-a-wooden-perch-in-forest-28676626/)", out.width="75%" }
 knitr::include_graphics("images/Muscicapa-striata.webp", dpi = 75)
 ```
 
@@ -898,7 +915,7 @@ Mehr Infos zum Grauschnäpper findet ihr hier:
 
 ## Star
 
-```{r image_star, fig.cap = "Star (Sturnus vulgaris). Foto von [Hemant Goyal](https://www.pexels.com/photo/close-up-photo-of-a-common-starling-4478481/)" , out.width="60%" }
+```{r image_star, fig.cap = "Star (Sturnus vulgaris). Foto von [Hemant Goyal](https://www.pexels.com/photo/close-up-photo-of-a-common-starling-4478481/)" , out.width="50%" }
 knitr::include_graphics("images/sturnus-vulgaris.webp", dpi = 75)
 ```
 
@@ -952,7 +969,7 @@ Mehr Infos zum Star findet ihr hier:
 
 ## Waldbaumläufer
 
-```{r image_Waldbaumläufer, fig.cap = "Waldbaumläufer (Certhia familiaris). Foto von [Erik Karits](https://www.pexels.com/photo/close-up-shot-of-a-eurasian-treecreeper-perched-on-a-tree-branch-11403869/)", out.width="40%" }
+```{r image_Waldbaumläufer, fig.cap = "Waldbaumläufer (Certhia familiaris). Foto von [Erik Karits](https://www.pexels.com/photo/close-up-shot-of-a-eurasian-treecreeper-perched-on-a-tree-branch-11403869/)", out.width="50%" }
 knitr::include_graphics("images/Certhia-familiaris.webp", dpi = 75)
 ```
 Waldbaumläufer sehen dem Gartenbaumläufer sehr ähnlich und lassen sich am besten durch den Gesang unterscheiden. Auch der Waldbaumläufer klettert die Bäume auf Suche nach in der Borke versteckten Insekten am Stamm hinauf.
@@ -1002,7 +1019,7 @@ Mehr Infos zum Zaunkönig findet ihr hier:
 
 
 ## Rotdrossel
-```{r image_Rotdrossel, fig.cap = "Rotdrossel (Turdus iliacus). Foto von [Denitsa Kireva](https://www.pexels.com/photo/bird-on-pebbles-16752486/)", out.width="40%" }
+```{r image_Rotdrossel, fig.cap = "Rotdrossel (Turdus iliacus). Foto von [Denitsa Kireva](https://www.pexels.com/photo/bird-on-pebbles-16752486/)", out.width="50%" }
 knitr::include_graphics("images/Turdus-iliacus.webp", dpi = 75)
 ```
 
@@ -1027,7 +1044,7 @@ Mehr Infos zur Rotdrossel findet ihr hier:
 
 
 ## Sumpfmeise
-```{r image_Sumpfmeise, fig.cap = "Sumpfmeise (Poecile palustris). Foto von [Erik Karits](https://www.pexels.com/photo/close-up-of-small-bird-on-branch-6589083/)", out.width="60%" }
+```{r image_Sumpfmeise, fig.cap = "Sumpfmeise (Poecile palustris). Foto von [Erik Karits](https://www.pexels.com/photo/close-up-of-small-bird-on-branch-6589083/)", out.width="75%" }
 knitr::include_graphics("images/Poecile-palustris.webp", dpi = 75)
 ```
 Die Oberseite des Gefieders der Sumpfmeise ist braun, die Unterseite hell. Von der Stirn bis in den Nacken ist der Kopf schwarz gefärbt, genauso wie ein schmaler Fleck am Kinn. Sie leben in feuchten Wäldern mit viel Totholz, in denen sie sich Baumhöhlen zum Brüten suchen und Nahrungsvorräte anlegen.
@@ -1052,7 +1069,7 @@ Mehr Infos zur Sumpfmeise findet ihr hier:
 
 
 ## Nebelkrähe
-```{r image_Nebelkrähe, fig.cap = "Nebelkrähe (Corvus cornix). Foto von [Jenő Medgyesi](https://www.pexels.com/photo/dolmanous-crow-bird-watching-12875267/)", out.width="60%" }
+```{r image_Nebelkrähe, fig.cap = "Nebelkrähe (Corvus cornix). Foto von [Jenő Medgyesi](https://www.pexels.com/photo/dolmanous-crow-bird-watching-12875267/)", out.width="75%" }
 knitr::include_graphics("images/Corvus-cornix.webp", dpi = 75)
 ```
 Im Osten von Deutschland und Europa ist die Nebelkrähe ein häufiger Brutvogel, während im Westen die eng verwandte Rabenkrähe ihr Verbreitungsgebiet hat. Während die Rabenkrähe komplett schwarz ist, hat die Nebelkrähe zwar einen schwarz glänzenden Kopf, Kehle, Flügel, Schwanz und Schenkfedern, ist aber ansonsten aschgrau gefärbt. An der Grenze der Verbreitungsgebiete der beiden Arten kommen Hybride vor. Nebelkrähen sind Allesfresser und ernähren sich neben Samen, Früchten und Abfall auch gerne von Nüssen, die sie aus großer Höhe auf harten Boden fallen lassen, um sie zu öffnen. 
@@ -1076,7 +1093,7 @@ Mehr Infos zur Nebelkrähe findet ihr hier:
 <a href="https://ebird.org/species/hoocro1" target ="_blank"> Informationen bei eBird </a>
 
 ## Mauersegler
-```{r image_Mauersegler, fig.cap = "Mauersegler (Apus apus). Foto von [Mahmoud Yahyaoui](https://www.pexels.com/photo/flying-common-swift-bird-21852469/)", out.width="60%" }
+```{r image_Mauersegler, fig.cap = "Mauersegler (Apus apus). Foto von [Mahmoud Yahyaoui](https://www.pexels.com/photo/flying-common-swift-bird-21852469/)", out.width="75%" }
 knitr::include_graphics("images/Apus-apus.webp", dpi = 75)
 ```
 
@@ -1100,7 +1117,7 @@ Mehr Infos zum Mauersegler findet ihr hier:
 
 
 ## Girlitz
-```{r image_Girlitz, fig.cap = "Girlitz (Serinus serinus). Foto von [MEUM MARE](https://www.pexels.com/photo/european-serin-bird-on-tree-branches-20659793/)", out.width="40%" }
+```{r image_Girlitz, fig.cap = "Girlitz (Serinus serinus). Foto von [MEUM MARE](https://www.pexels.com/photo/european-serin-bird-on-tree-branches-20659793/)", out.width="50%" }
 knitr::include_graphics("images/Serinus-serinus.webp", dpi = 75)
 ```
 Girlitze waren früher nur im Mittelmeergebiet heimisch, haben sich aber Richtung Norden ausgebreitet. Als Teilzieher überwintern einige jedoch im Mittelmeerraum und in Westeuropa. Auch wenn er nicht gefährdet ist, nimmt der Bestand teilweise ab, da er zunehmend erschwert Lebensraum findet.  
@@ -1124,7 +1141,7 @@ Mehr Infos zum Girlitz findet ihr hier:
 
 
 ## Gelbspötter
-```{r image_Gelbspötter, fig.cap = "Gelbspötter (Hippolais icterina). Foto von [Axel Aßmann](https://www.naturgucker.de/natur.dll/Ku5qhXEOZ~2yjhLaLgggKlDT0tO/)", out.width="60%" }
+```{r image_Gelbspötter, fig.cap = "Gelbspötter (Hippolais icterina). Foto von [Axel Aßmann](https://www.naturgucker.de/natur.dll/Ku5qhXEOZ~2yjhLaLgggKlDT0tO/)", out.width="75%" }
 knitr::include_graphics("images/Hippolais-icterina.webp", dpi = 75)
 
 #Freigabe erteilt für	NABU|naturgucker
@@ -1154,12 +1171,37 @@ Mehr Infos zum Gelbspötter findet ihr hier:
 
 # Kooperationen
 
-Die Algorithmen, die für die Bestimmung der Vogelstimmen verwendet wurden sind [Naturblick](https://naturblick.museumfuernaturkunde.berlin/), entwickelt vom Museum für Naturkunde Berlin und [Birdnet](https://birdnet.cornell.edu/), entwickelt vom Cornell Lab of Ornithology. Beide sind auch als Bestimmungsapps verfügbar.
+Die Algorithmen, die für die Bestimmung der Vogelstimmen verwendet wurden, sind [Naturblick](https://naturblick.museumfuernaturkunde.berlin/), entwickelt vom Museum für Naturkunde Berlin, und [Birdnet](https://birdnet.cornell.edu/), entwickelt vom Cornell Lab of Ornithology. Beide sind auch als Bestimmungsapps verfügbar.
 
-Das Projekt erfolgte mit freundlicher Genehmigung der [Stiftung Preussische Schösser und Gärten Berlin-Brandenburg](https://www.spsg.de/startseite).
+Das Projekt erfolgt mit freundlicher Unterstützung der [Stiftung Preußische Schlösser und Gärten Berlin-Brandenburg](https://www.spsg.de/startseite).
 
 <div class="image-row">
-  <img src="images/naturblick-logo.webp" alt="Image 1" height=110>
-  <img src="images/birdnet-logo.webp" alt="Image 2" height=110>
-  <img src="images/SPSG-Logo.webp" alt="Image 3" height=110>
+<a href="https://naturblick.museumfuernaturkunde.berlin/" target="_blank">
+  <img src="images/naturblick-logo.webp" alt="Logo Naturblick"
+  height=110><br>
+ Naturblick
+</a>
+
+<a href="https://birdnet.cornell.edu/" target="_blank">
+  <img src="images/birdnet-logo.webp" alt="Logo Birdnet" height=110><br>
+   Birdnet
+</a>
+
+<a href="https://www.spsg.de/startseite" target="_blank">
+  <img src="images/SPSG-Logo.webp" alt="Logo SPSG" height=110><br>
+  Stiftung Preußische Schlösser <br>und Gärten Berlin-Brandenburg
+</a>
+
 </div>
+
+#### Kontakt
+
+<a href="https://www.uni-potsdam.de/de/ibb-macroecology/index" target="_blank"> Ökologie und Makroökologie </a> 
+
+Universität Potsdam
+
+Maulbeerallee 3
+
+14469 Potsdam
+
+E-Mail: office-macroeco@uni-potsdam.de

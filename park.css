@@ -22,21 +22,43 @@
 }
 
 .Sidebar {
-  background-image: url('images/220111-Logo-HKS.svg');
+  background-image: url('images/220111-Wortmarke-HKS_DE.svg');
   background-repeat: no-repeat;
   background-position: center top;
   margin-top: 1em;
-  background-size: 400px 150px;
+  background-size: 250px 150px;
+  background-blend-mode: normal;
 }
 #toc {
-  margin-top: 180px;
+  margin-top: 160px;
 }
-
 @media (max-width:1000px) {
-    .header-nav {
-        display: block
+    .Sidebar {
+    	background-blend-mode: luminosity;
+      	background-image: none;
+  	background-repeat: no-repeat;
+  	background-position: left bottom;
+  	background-size: 75px calc(100vh - 75%);
+ 	left: 0;
+ 	margin-top: calc(100vh - 25%);
+        width: fit-content;
+        transform: translateX(calc(100vw - 100%));
+        transition: transform .5s cubic-bezier(.5, .32, .01, 1);
+        padding: 0 0;
+        border-right: 1px solid var(--border-color);
+        border-left: 1px solid var(--border-color);
+        border-top: 1px solid var(--border-color);
+        border-bottom: 1px solid var(--border-color);
+        border-radius: 15px;
+         
     }
+	#toc {
+  		margin-top: 5px;
+	}
+.	.Content {
+		margin-top: 100em;
+	}
+	
 }
-
 
 

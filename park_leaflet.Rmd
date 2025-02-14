@@ -1,5 +1,5 @@
 ---
-title: "Vögel im Park Sanssouci"
+title: "<br><br>Vögel im Park Sanssouci"
 subtitle: "Automatisierte Bestimmung von Vogelgesängen im Park Sanssouci"
 date: '`r format(Sys.time(), "%d %B, %Y")`'
 lang: "de"
@@ -9,7 +9,7 @@ output:
     lightbox: true
     css: "park.css"
     toc_depth: 3
-    logo: "images/220111-Logo-HKS.svg"
+    logo: "images/220111-Wortmarke-HKS_DE.svg"
 
 link-citations: yes
 csl: ecology.csl
@@ -111,7 +111,6 @@ html_tag_audio = function(file, type = c("mp3")) {
       src = file,
       type = glue::glue("audio/{type}", type = type)))}
 
-# Year plot
 year.cols = c("#bf922a","#079999","#7f1174") ##747F11,
 names(year.cols) = unique(artenliste_raw$year)%>%sort()
 
@@ -122,6 +121,65 @@ dates.for.weeks = artenliste_raw %>%
   reframe(dweek.of.year = strftime(obs.temp.res, format = "%d-%m")%>%
             as.POSIXct(format = "%d-%m", tz ="UTC"))
 
+# Location plot
+location.plot = function(x){
+  if(x == "alle Standorte"){
+    box.id = box_locs$nest.box
+  }else{
+        box.id = box_locs$nest.box[box_locs$group_name == x]
+    }
+    
+
+  
+  top5 =  artenliste_raw %>% 
+  filter(nest.box %in% box.id) %>%
+  group_by(spec) %>% 
+  reframe(n.det = sum(n.det)) %>%
+  arrange(desc(n.det))%>%
+  slice(1:5)%>%
+  left_join(translation)  
+  
+  to.plot = artenliste_raw %>% 
+  filter(spec %in% top5$spec,
+         nest.box %in% box.id) %>%
+  group_by(year, spec) %>% 
+  reframe(n.det = sum(n.det)) %>%
+  group_by(year, spec) %>% 
+  left_join(translation)
+  
+   to.plot$deutsch=as.character( to.plot$deutsch)
+  to.plot$deutsch[to.plot$deutsch == "Sommergoldhähnchen"] = "Sommergold-\nhähnchen" 
+  top5$deutsch[top5$deutsch == "Sommergoldhähnchen"] = "Sommergold-\nhähnchen" 
+  to.plot$deutsch = factor(to.plot$deutsch, levels = top5$deutsch)
+  
+ 
+ ggplot(data = to.plot,aes(x = year, 
+           y = n.det, 
+           fill = year%>%factor())) + 
+  geom_col(position = position_dodge2(width = 2, preserve = "single"), col="grey90")+
+  theme_bw()+
+  facet_grid(.~deutsch)+ 
+  #scale_x_datetime(date_labels = "%y")+
+  theme(panel.background = element_rect(fill = "#F7F7F7"),
+        panel.spacing = unit(2, "lines"),
+        plot.background = element_rect(fill = '#F7F7F7', colour = NA_character_),
+        plot.margin = margin(0.3,1,0.3,0.3, "cm"),
+        plot.title = element_text(hjust = 0.5,  size = 16, color = "grey40"), 
+        legend.title = element_blank(), 
+        legend.position = c(0.2, 0.95), 
+        legend.text = element_text(size=12, color = "grey40"),
+        legend.spacing.x = unit(.1, 'cm'),
+        legend.background = element_rect(fill = 'transparent'),
+        axis.title = element_text(size = 12, color = "grey40"),
+        axis.text = element_text(size = 12, color = "grey40"),
+        axis.text.x = element_text(size = 9, color = "grey40"))+
+  scale_fill_manual(values=year.cols) +
+  guides(fill = "none")+
+  labs(y= "Detektionen pro Jahr", x = "") #title = paste("5 Häufigste Arten: ",x,sep="")
+}
+
+
+# Year Plot
 year.plot = function(x){
  artenliste_raw %>% 
   filter(spec == x) %>%
@@ -149,21 +207,26 @@ year.plot = function(x){
         axis.text = element_text(size = 12, color = "grey40"))+
   scale_fill_manual(values=year.cols) +
   guides(fill = guide_legend(nrow = 1))+
-  labs(y= "Anzahl Detektionen", x = "", title = "Akustische Frühlingsaktivität")
+  labs(y= "Detektionen pro Woche", x = "", title = "Akustische Frühlingsaktivität")
 }
 
 # Day Plot
+
 day.plot = function(x){
- bird_detections %>%
+  to.plot <- bird_detections %>%
   filter(rec.type %in% c("Songmeter", "Songmeter_Mini"), nest.box != "Office")%>%
   mutate(hour = hour(time.win.det), minute = minute(time.win.det),second = second(time.win.det) ) %>%
   group_by(spec, format_hour = as.POSIXct(paste(hour, minute, second, sep = ":"), format = "%H:%M:%S"), year =   year(time.win.det))%>%
   reframe(n.det = sum(n.record)) %>% #macht das so Sinn?
   mutate(day.cat = ifelse(hour(format_hour) < 12, "morgens", "abends") %>%
             factor(., levels = c("morgens", "abends"))) %>% 
-  filter(spec == x) %>%
-    
- ggplot(aes(x = floor_date(format_hour, unit="mins") %>%
+  filter(spec == x) 
+  
+  meta.day.night = to.plot %>% group_by(day.cat) %>% reframe(n.cat = n())
+  day.cat.to.remove = meta.day.night$day.cat[meta.day.night$n.cat < 20]
+  to.plot = to.plot %>% filter(!day.cat %in% day.cat.to.remove)
+      return(
+ ggplot(data = to.plot, aes(x = floor_date(format_hour, unit="mins") %>%
                format("%H:%M:%S")%>%
                as.POSIXct(format="%H:%M:%S"),
              y = n.det,
@@ -186,10 +249,10 @@ day.plot = function(x){
   scale_fill_manual(values=year.cols) +
   scale_x_datetime(date_breaks = "60 mins", date_labels = "%H:%M" )+
       guides(fill = guide_legend(nrow = 1))+
- labs(y= "Anzahl Detektionen", x = "Uhrzeit", title = "Akustische Tagesaktivität")
+ labs(y= "Detektionen pro 10 min", x = "Uhrzeit", title = "Akustische Tagesaktivität")
+      )
 }
 ```
-
 
 # Audiomonitoring - Das Projekt 
 
@@ -238,9 +301,15 @@ leaflet(width = "95%", height = 500) %>%
 
 # Artenlisten 
 
-Die folgenden Listen zeigen jeweils die 10 Arten, die am häufigsten detektiert wurden. Sie sind nach Jahr und nach Standort aufgeteilt.
+Die folgenden Übersichten zeigen jeweils die 5 Arten, die über alle Jahre hinweg am häufigsten detektiert wurden. Dazu finden Sie jährliche Listen, die jeweils die 10 am häufigsten detektierten Arten zeigen. Die Informationen sind nach Jahr und nach Standort aufgeteilt.
 
 ## Artenliste aller Standorte  {.tabset}
+
+### Übersicht
+```{r plot_interann, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent'), fig.cap="Die jährlichen Detektionen der 5 Arten, die insgesamt über alle Erfassungsjahre am häufigsten detektiert wurden."}
+location.plot("alle Standorte")
+```
+
 ### 2024
 ```{r Artenliste2024, results="asis",echo=FALSE}
 artenliste = left_join(artenliste_raw, box_locs[,c(1,5)])  %>%
@@ -293,8 +362,13 @@ knitr::kable(artenliste[1:10,])
 ```
 
 
-
 ## Rehgarten  {.tabset}
+
+### Übersicht
+```{r plot_interannreh, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent'), fig.cap="Die jährlichen Detektionen der 5 Arten, die insgesamt über alle Erfassungsjahre am häufigsten detektiert wurden."}
+location.plot("Rehgarten")
+```
+
 ### 2024
 ```{r standort12024, results="asis",echo=FALSE}
 artenliste = artenliste.standort.jahr(1, 2024)
@@ -311,7 +385,14 @@ artenliste = artenliste.standort.jahr(1, 2022)
 knitr::kable(artenliste[1:10,])
 ```
 
+
 ## Fasanerie 1  {.tabset}
+
+### Übersicht
+```{r plot_interannfas1, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent'),fig.cap="Die jährlichen Detektionen der 5 Arten, die insgesamt über alle Erfassungsjahre am häufigsten detektiert wurden."}
+location.plot("Fasanerie 1")
+```
+
 ### 2024
 ```{r standort22024, results="asis",echo=FALSE}
 artenliste = artenliste.standort.jahr(2, 2024)
@@ -330,6 +411,12 @@ knitr::kable(artenliste[1:10,])
 ```
 
 ## Fasanerie 2  {.tabset}
+
+### Übersicht
+```{r plot_interannfas2, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent'),fig.cap="Die jährlichen Detektionen der 5 Arten, die insgesamt über alle Erfassungsjahre am häufigsten detektiert wurden."}
+location.plot("Fasanerie 2")
+```
+
 ### 2024
 ```{r standort32024, results="asis",echo=FALSE}
 artenliste = artenliste.standort.jahr(3, 2024)
@@ -349,6 +436,12 @@ knitr::kable(artenliste[1:10,])
 ```
 
 ## Hippodrom  {.tabset}
+
+### Übersicht
+```{r plot_interannhip, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent'),fig.cap="Die jährlichen Detektionen der 5 Arten, die insgesamt über alle Erfassungsjahre am häufigsten detektiert wurden."}
+location.plot("Hippodrom")
+```
+
 ### 2024
 ```{r standort42024, results="asis",echo=FALSE}
 artenliste = artenliste.standort.jahr(4, 2024)
@@ -368,6 +461,12 @@ knitr::kable(artenliste[1:10,])
 ```
 
 ## Hopfengarten 1  {.tabset}
+
+### Übersicht
+```{r plot_interannhop1, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent'),fig.cap="Die jährlichen Detektionen der 5 Arten, die insgesamt über alle Erfassungsjahre am häufigsten detektiert wurden."}
+location.plot("Hopfengarten 1")
+```
+
 ### 2024
 ```{r standort52024, results="asis",echo=FALSE}
 artenliste = artenliste.standort.jahr(5, 2024)
@@ -387,6 +486,12 @@ knitr::kable(artenliste[1:10,])
 ```
 
 ## Hopfengarten 2  {.tabset}
+
+### Übersicht
+```{r plot_interannhop2, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent'),fig.cap="Die jährlichen Detektionen der 5 Arten, die insgesamt über alle Erfassungsjahre am häufigsten detektiert wurden."}
+location.plot("Hopfengarten 2")
+```
+
 ### 2024
 ```{r standort62024, results="asis",echo=FALSE}
 artenliste = artenliste.standort.jahr(6, 2024)
@@ -406,6 +511,12 @@ knitr::kable(artenliste[1:10,])
 ```
 
 ## Marlygarten  {.tabset}
+
+### Übersicht
+```{r plot_interannmarl, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent'), fig.cap="Die jährlichen Detektionen der 5 Arten, die insgesamt über alle Erfassungsjahre am häufigsten detektiert wurden."}
+location.plot("Marlygarten")
+```
+
 ### 2024
 ```{r standort72024, results="asis",echo=FALSE}
 artenliste = artenliste.standort.jahr(7, 2024)
@@ -426,112 +537,6 @@ knitr::kable(artenliste[1:10,])
 
 
 # Artensteckbriefe
-## Ringeltaube
-
-```{r image_Ringeltaube, fig.cap = "Ringeltaube (Columba palumbus). Foto von [Patrick Schulze](https://www.pexels.com/photo/two-pigeons-perching-on-a-branch-23383222/)", out.width="50%" }
-knitr::include_graphics("images/Columba-palumbus.webp", dpi = 75)
-```
-
-Ringeltauben finden sich sehr häufig und sind leicht zu bestimmen. Der große graublaue Vogel hat am Hals einen türkisfarbenen und weißen Fleck und auch auf der Flügeln trägt sie eine große weiße Markierung.
-
-
-```{r info_ringeltaube, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
-year.plot("cowpig1")
-day.plot("cowpig1")
-```
-
-Das ist der Gesang der Ringeltaube:
-```{r}
-html_tag_audio("audio/Ringeltaube.mp3", type = "mp3")
-```
-
-Mehr Infos zur Ringeltaube findet ihr hier:
-
-<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/ringeltaube/" target ="_blank"> Informationen vom NABU </a>
-
-<a href="https://ebird.org/species/cowpig1" target ="_blank"> Informationen bei eBird </a>
-
-## Rotkehlchen
-
-```{r image_Rotkehlchen, fig.cap = "Rotkehlchen (Erithacus rubecula). Foto von [Pixabay](https://www.pexels.com/photo/orange-white-brown-bird-on-top-of-red-branch-67849/)" , out.width="75%"}
-knitr::include_graphics("images/Erithacus-rubecula.webp", dpi = 75)
-```
-
-Wie man sich aus dem Namen schon denken kann, hat das Rotkehlchen eine orangefarbene Kehle, Brust und Stirn. Im Vergleich zu anderen Vögeln ist es sehr zutraulich und im Garten häufig zu finden. Gerade wenn ein Beet umgegraben wird, sucht es dort gerne schnell nach Nahrung wie Würmern oder Spinnen. Rotkehlchen haben eine Reihe von verschiedenen leichte melancholischen Gesängen, die in einer „perlenden“ Strophe enden.
-
-
-```{r info_rotkehlchen, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
-year.plot("eurrob1")
-day.plot("eurrob1")
-```
-
-Hier ist ein Audiobeispiel des Gesangs des Rotkehlchens:
-```{r}
-html_tag_audio("audio/Rotkehlchen.mp3", type = "mp3")
-```
-
-Mehr Infos zum Rotkehlchen findet ihr hier:
-
-<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/rotkehlchen/" target ="_blank"> Informationen vom NABU </a>
-
-<a href="https://ebird.org/species/eurrob1" target ="_blank"> Informationen bei eBird </a>
-
-
-
-
-
-
-## Trauerschnäpper
-
-```{r image_trauerschnaepper, fig.cap = "Trauerschnäpper (Ficedula hypoleuca). Foto von [Jürgen](https://www.pexels.com/photo/warbler-perching-on-branch-16944312/)" , out.width="75%"}
-knitr::include_graphics("images/Ficedula-hypoleuca.webp", dpi = 75)
-```
-
-Trauerschnäpper sind Langstreckenzieher. Während sie den Winter in den afrikanischen Tropen verbringen, sind sie bei uns zwischen April und September häufig anzutreffen. Die Männchen sind auf der Oberseite dunkelbraun bis schwarz, die Weibchen hellbraun. Die Unterseite und die Flügelflecken hingegen sind weiß. 
-
-
-```{r info_trauerschnaepper, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
-year.plot("eupfly1")
-day.plot("eupfly1")
-```
-
-So klingt der Gesang eines Trauerschnäppers:
-```{r}
-html_tag_audio("audio/Trauerschnaepper.mp3", type = "mp3")
-```
-
-Mehr Infos zum Trauerschnäpper findet ihr hier:
-
-<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/trauerschnaepper/" target ="_blank"> Informationen vom NABU </a>
-
-<a href="https://ebird.org/species/eupfly1" target ="_blank"> Informationen bei eBird </a>
-
-
-## Kohlmeise
-```{r image_Kohlmeise, fig.cap = "Kohlmeise (Parus major). Foto von [Monique Laats](https://www.pexels.com/photo/black-and-gray-bird-on-body-of-water-736520/)", out.width="75%" }
-knitr::include_graphics("images/Parus-major.webp", dpi = 75)
-```
-
-Kohlmeisen sind zutrauliche Vögel, die häufig in Gärten anzutreffen und an ihrer Färbung leicht erkennbar sind. Sie haben ein großes Verbreitungsgebiet und sind bis auf den nördlichsten Teil und einigen Hochgebirgen Fennoskandiens auf dem gesamten Europäischen Festland anzutreffen.
-
-```{r info_kohlmeisen, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
-year.plot("gretit1")
-day.plot("gretit1")
-```
-
-Das sind die Rufe der Kohlmeise:
-```{r}
-html_tag_audio("audio/Kohlmeise_2min_SMU02919_20240403_050000.mp3", type = "mp3")
-```
-
-Mehr Infos zur Kohlmeise findet ihr hier:
-
-<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/kohlmeise/" target ="_blank"> Informationen vom NABU </a>
-
-<a href="https://ebird.org/species/gretit1" target ="_blank"> Informationen bei eBird </a>
-
-
-
 
 ## Amsel
 
@@ -562,65 +567,6 @@ Mehr Infos zur Amsel findet ihr hier:
 
 <a href="https://ebird.org/species/eurbla" target ="_blank"> Informationen bei eBird </a>
 
-
-
-
-## Waldkauz
-
-```{r image_Waldkauz, fig.cap = "Waldkauz (Strix aluco). Foto von [D H J](https://www.pexels.com/photo/owl-sitting-in-tree-nest-10989038/)" , out.width="50%"}
-knitr::include_graphics("images/Strix-aluco.webp", dpi = 75)
-```
-
-Bekannt sind Waldkäuze für ihren Reviergesang. Besonders das langgezogene, heulende Huh-Huhuhu-Huuuh des Männchens, was man in den Dämmerungsstunden hören kann ist ein bekanntes Motiv. Das Weibchen antwortet mit "Kuwitt", was im Aberglauben als "Komm-mit!" des "Totenvogels" bezeichnet wird.
-
-Waldkäuze sind beachtliche Jäger, zu deren Beute auch Tiere ihres Gewichts, wie z.B. Eichhörnchen zählen. Der Tagesdurchschnittsbedarf eines Kauzes entspricht dem Gewicht von etwa vier Feldmäusen. Die Tiere werden komplett verschluckt, erst wenn der Vogel an einem Rastplatz oder einem Jagdansitz verharrt, wird das Gewöll hochgewürgt.
-
-
-```{r info_waldkauz, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
-year.plot("tawowl1")
-day.plot("tawowl1")
-```
-
-Hier ist eine Hörprobe des Warnrufes des Waldkauz Weibchens:
-```{r}
-html_tag_audio("audio/Waldkauz.mp3", type = "mp3")
-```
-
-Mehr Infos zum Waldkauz findet ihr hier:
-
-<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/waldkauz/" target ="_blank"> Informationen vom NABU </a>
-
-<a href="https://ebird.org/species/tawowl1" target ="_blank"> Informationen bei eBird </a>
-
-
-
-## Mönchsgrasmücke
-
-```{r image_Mönchsgrasmücke, fig.cap = "Mönchsgrasmücke (Sylvia atricapilla). Foto von [Kenny Egido](https://www.pexels.com/photo/close-up-shot-of-a-eurasian-blackcap-perched-on-a-tree-branch-13027388/)" , out.width="75%"}
-knitr::include_graphics("images/Sylvia-atricapilla.webp", dpi = 75)
-```
-
-Diese Vögel sind recht einheitlich grau, nur am Kopf hat das Männchen eine schwarze und das Weibchen eine rotbraune Färbung, was an die Kappe eines Mönchs erinnert. Ihr Ruf hört sich an, als würde man zwei Kieselsteine aneinanderschlagen. 
-
-
-```{r info_moenchsgrasmuecke, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
-year.plot("blackc1")
-day.plot("blackc1")
-```
-
-So klingt der Gesang der Mönchsgrasmücke:
-```{r}
-html_tag_audio("audio/Moenchsgrasmuecke2.mp3", type = "mp3")
-```
-
-Mehr Infos zur Mönchsgrasmücke findet ihr hier:
-
-<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/moenchsgrasmuecke/" target ="_blank"> Informationen vom NABU </a>
-
-<a href="https://ebird.org/species/blackc1" target ="_blank"> Informationen bei eBird </a>
-
-
-
 ## Blaumeise
 
 ```{r image_Blaumeise, fig.cap = "Blaumeise (Cyanistes caeruleus). Foto von [Pixabay](https://www.pexels.com/photo/yellow-bird-perched-on-tree-357129/)" , out.width="75%"}
@@ -645,163 +591,6 @@ Mehr Infos zur Blaumeise findet ihr hier:
 <a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/blaumeise/" target ="_blank"> Informationen vom NABU </a>
 
 <a href="https://ebird.org/species/blutit" target ="_blank"> Informationen bei eBird </a>
-
-
-## Kleiber
-
-```{r image_kleiber, fig.cap = "Kleiber (Sitta europea). Foto von [Felix Rehm](https://www.pexels.com/photo/eurasian-nuthatch-28208893/)", out.width="75%" }
-knitr::include_graphics("images/Sitta-europea.webp", dpi = 75)
-```
-
-Kleiber haben ihren Namen redlich verdient. Als richtige Bastler verkleben sie die Eingänge von Bruthöhlen anderer Vögel wie Spechte mit Lehm, um sie dann selbst zu nutzen. Außerdem können sie als einzige Vögel einen Baum kopfüber hochklettern. Sie sind sehr standorttreu und verlassen ihr Gebiet selten. Man hört sie meist, bevor man sie sieht, ihr Ruf bei der Nahrungssuche ist scharf und spitz und um andere zu warnen nutzt er einen wie "tweet" klingenden Warnruf. Ihr Gesang ist komplex und besteht aus mehreren Strophen.
-
-```{r info_kleiber, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
-year.plot("eurnut2")
-day.plot("eurnut2")
-```
-
-Hier sind die Rufe des Kleibers als Audiobeispiel:
-```{r}
-html_tag_audio("audio/Kleiber.mp3", type = "mp3")
-```
-
-Mehr Infos zum Kleiber findet ihr hier:
-
-<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/kleiber/" target ="_blank"> Informationen vom NABU </a>
-
-<a href="https://ebird.org/species/eurnut2" target ="_blank"> Informationen bei eBird </a>
-
-## Grünspecht
-```{r image_Grünspecht, fig.cap = "Grünspecht (Picus viridis). Foto von [Mark A Jenkins](https://www.pexels.com/photo/vibrant-green-woodpecker-in-natural-habitat-28530001/)" , out.width="75%"}
-knitr::include_graphics("images/Picus-viridis.webp", dpi = 75)
-```
-
-Der Grünspecht hat, wie der Name schon sagt, ein auffälliges grünes Gefieder, aber auch seine rote Krone und sein schwarzer Kopf stechen hervor. Er ist verhältnismäßig groß, kommt häufig vor und findet sich häufig auch auf dem Boden, wo er nach Nahrung sucht. Sein Gesang ist sehr auffällig und erinnert an das Lachen eines Menschen.
-
-```{r info_gruenspecht, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
-year.plot("eugwoo2")
-day.plot("eugwoo2")
-```
-
-So klingt der Gesang des Grünspechts:
-
-```{r}
-html_tag_audio("audio/Grünspecht_20220514_033000.WAV_375_390.mp3", type = "mp3")
-```
-
-
-Mehr Infos zum Grünspecht findet ihr hier:
-
-<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/gruenspecht/" target ="_blank"> Informationen vom NABU </a>
-
-<a href="https://ebird.org/species/eugwoo2" target ="_blank"> Informationen bei eBird </a>
-
-
-## Gartenbaumläufer
-```{r image_gartenbaumläufer, fig.cap = "Gartenbaumläufer (Certhia brachydactyla). Foto von [Petr Ganaj](https://www.pexels.com/photo/short-toed-treecreeper-perched-on-a-thin-tree-trunk-18930350/)", out.width="75%" }
-knitr::include_graphics("images/Certhia-brachydactyla.webp", dpi = 75)
-```
-
-Gartenbaumläufer sind gut getarnt und verbingen einen Großteil ihres Lebens in der sekrechten Position am Baum. Sie sehen den Waldbaumläufern sehr ähnlich und lassen sich am besten durch ihren Gesang unterscheiden.
-
-```{r info_gartenbaumläufer, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
-year.plot("shttre1")
-day.plot("shttre1")
-```
-
-Hier ist ein Hörbeispiel für den Gartenbaumläufer:
-```{r}
-html_tag_audio("audio/Gartenbaumläufer_SMM05225_20230505_064502.mp3", type = "mp3")
-```
-
-Mehr Infos zu dem Gartenbaumläufer findet ihr hier:
-
-<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/gartenbaumlaeufer/" target ="_blank"> Informationen vom NABU </a>
-
-<a href="https://ebird.org/species/shttre1" target ="_blank"> Informationen bei eBird </a>
-
-
-
-## Nachtigall
-
-```{r image_Nachtigall, fig.cap = "Nachtigall (Luscinia megarhynchos). Foto von [Dariusz Grosa](https://www.pexels.com/photo/brown-bird-perched-2570161/)" , out.width="75%"}
-knitr::include_graphics("images/Luscinia-megarhynchos.webp", dpi = 75)
-```
-
-Die Nachtigall sieht zwar etwas unscheinbar aus, aber ihr schöner Gesang ist wohl der berühmteste aller Singvögel. Sie ist, wie bei „Romeo und Julia", ein beliebtes Motiv in der Literatur und findet sich in Redewendungen wie das berlinerische „Nachtigall, ick hör dir tapsen". Den äußerst variablen Gesang, der gerne als "unvorhersehbar" oder "phantasievoll" beschrieben wird, hört man nachts vom balzenden Männchen. Nachtigallen sind Zugvögel und überwintern in den tropischen Regionen Afrikas.
-
-
-```{r info_nachtigall, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
-year.plot("comnig1")
-day.plot("comnig1")
-```
-
-So hat die Nachtigall im Park gesungen:
-```{r}
-html_tag_audio("audio/Nachtigall.mp3", type = "mp3")
-```
-
-Mehr Infos zur Nachtigall findet ihr hier:
-
-<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/nachtigall/" target ="_blank"> Informationen vom NABU </a>
-
-<a href="https://ebird.org/species/comnig1" target ="_blank"> Informationen bei eBird </a>
-
-
-
-## Buntspecht
-```{r image_Buntspecht, fig.cap = "Buntspecht (Dendrocopos major). Foto von [John Napier](https://www.pexels.com/photo/black-and-white-bird-on-brown-tree-branch-10286262/)", out.width="75%" }
-knitr::include_graphics("images/Dendrocopos-major.webp", dpi = 75)
-```
-
-Der Buntspecht gehört zu den größeren Spechten und ist an seinen schwarz-weißen Flügeln, seinem hellen Bauch und vor allem an den roten Unterschwanzdecken gut zu erkennen. Hören tut man ihn meist durch sein Trommeln an Totholz. Gebiete mit viel Totholz sind ihm am liebsten, er ist jedoch nicht auf bestimmte Baumarten spezialisiert und findet sich daher sowohl in Parks, Laub- und Nadelwäldern.
-
-```{r info_buntspecht, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
-year.plot("grswoo")
-day.plot("grswoo")
-```
-
-
-Das ist das typische Trommeln des Buntspechts:
-```{r}
-html_tag_audio("audio/Buntspecht_6.5min_SMU02919_20230410_063002.mp3", type = "mp3")
-```
-
-Mehr Infos zum Buntspecht findet ihr hier:
-
-<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/buntspecht/" target ="_blank"> Informationen vom NABU </a>
-
-<a href="https://ebird.org/species/grswoo" target ="_blank"> Informationen bei eBird </a>
-
-
-## Sommergoldhähnchen
-
-```{r image_Sommergoldhaenchen, fig.cap = "Sommergoldhähnchen (Regulus ignicapilla). Foto von [Alexis LOURS](https://www.pexels.com/photo/firecrest-bird-spreading-wings-in-french-forest-29151011/)" , out.width="75%"}
-knitr::include_graphics("images/Regulus-ignicapilla.webp", dpi = 75)
-```
-
-Anders als die Wintergoldhänchen, die das ganze Jahr über bei uns zu sehen sind, sind Sommergoldhähnchen Zugvögel und meist nur von März bis September bei uns zu beobachten. Sommergoldhähnchen sind nur minimal größer als Wintergoldhänchen, die die kleinsten Vögel Europas sind, und haben neben dem markanten Scheitelstreif eine schwarze Musterung um die Augen. Sie sind viel in Bewegung und in Baumkronen von Parks, Laub- und Mischwäldern zu finden.
-
-```{r info_sommergoldhaehnchen, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
-year.plot("firecr1")
-day.plot("firecr1")
-```
-
-Das ist der Gesang des Sommergoldhähnchens...:
-```{r}
-html_tag_audio("audio/Sommergoldhaenchen_gesang.mp3", type = "mp3")
-```
-
-...und das ihr Ruf:
-
-```{r}
-html_tag_audio("audio/Sommergoldhaenchen_ruf.mp3", type = "mp3")
-```
-Mehr Infos zum Sommergoldhähnchen findet ihr hier:
-
-<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/sommergoldhaehnchen/" target ="_blank"> Informationen vom NABU </a>
-
-<a href="https://ebird.org/species/firecr1" target ="_blank"> Informationen bei eBird </a>
 
 
 ## Buchfink
@@ -830,30 +619,53 @@ Mehr Infos zum Buchfink findet ihr hier:
 <a href="https://ebird.org/species/comcha" target ="_blank"> Informationen bei eBird </a>
 
 
-## Singdrossel
-
-```{r image_Singdrossel, fig.cap = "Singdrossel (Turdus philomelos). Foto von [Petr Ganaj](https://www.pexels.com/photo/song-thrush-standing-in-grass-19161378/)" , out.width="75%"}
-knitr::include_graphics("images/Turdus-philomelos.webp", dpi = 75)
+## Buntspecht
+```{r image_Buntspecht, fig.cap = "Buntspecht (Dendrocopos major). Foto von [John Napier](https://www.pexels.com/photo/black-and-white-bird-on-brown-tree-branch-10286262/)", out.width="75%" }
+knitr::include_graphics("images/Dendrocopos-major.webp", dpi = 75)
 ```
 
-Singdrosseln sind Kurzstreckenzieher, die vorwiegend in Südeuropa überwintern. Während die Oberseite einfarbig braun gefärbt ist, finden sich auf der weißen Unterseite dunkle, keilförmigen Flecken. Sie lässt sich gut an ihrem namensgebenden Gesang erkennen.
+Der Buntspecht gehört zu den größeren Spechten und ist an seinen schwarz-weißen Flügeln, seinem hellen Bauch und vor allem an den roten Unterschwanzdecken gut zu erkennen. Hören tut man ihn meist durch sein Trommeln an Totholz. Gebiete mit viel Totholz sind ihm am liebsten, er ist jedoch nicht auf bestimmte Baumarten spezialisiert und findet sich daher sowohl in Parks, Laub- und Nadelwäldern.
 
-
-```{r info_singdrossel, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
-year.plot("sonthr1")
-day.plot("sonthr1")
+```{r info_buntspecht, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
+year.plot("grswoo")
+day.plot("grswoo")
 ```
 
-So klingt die Singdrossel wenn sie singt:
+
+Das ist das typische Trommeln des Buntspechts:
 ```{r}
-html_tag_audio("audio/Singdrossel.mp3", type = "mp3")
+html_tag_audio("audio/Buntspecht_6.5min_SMU02919_20230410_063002.mp3", type = "mp3")
 ```
 
-Mehr Infos zur Singdossel findet ihr hier:
+Mehr Infos zum Buntspecht findet ihr hier:
 
-<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/singdrossel/" target ="_blank"> Informationen vom NABU </a>
+<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/buntspecht/" target ="_blank"> Informationen vom NABU </a>
 
-<a href="https://ebird.org/species/sonthr1" target ="_blank"> Informationen bei eBird </a>
+<a href="https://ebird.org/species/grswoo" target ="_blank"> Informationen bei eBird </a>
+
+
+## Gartenbaumläufer
+```{r image_gartenbaumläufer, fig.cap = "Gartenbaumläufer (Certhia brachydactyla). Foto von [Petr Ganaj](https://www.pexels.com/photo/short-toed-treecreeper-perched-on-a-thin-tree-trunk-18930350/)", out.width="75%" }
+knitr::include_graphics("images/Certhia-brachydactyla.webp", dpi = 75)
+```
+
+Gartenbaumläufer sind gut getarnt und verbingen einen Großteil ihres Lebens in der sekrechten Position am Baum. Sie sehen den Waldbaumläufern sehr ähnlich und lassen sich am besten durch ihren Gesang unterscheiden.
+
+```{r info_gartenbaumläufer, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
+year.plot("shttre1")
+day.plot("shttre1")
+```
+
+Hier ist ein Hörbeispiel für den Gartenbaumläufer:
+```{r}
+html_tag_audio("audio/Gartenbaumläufer_SMM05225_20230505_064502.mp3", type = "mp3")
+```
+
+Mehr Infos zu dem Gartenbaumläufer findet ihr hier:
+
+<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/gartenbaumlaeufer/" target ="_blank"> Informationen vom NABU </a>
+
+<a href="https://ebird.org/species/shttre1" target ="_blank"> Informationen bei eBird </a>
 
 
 ## Gartenrotschwanz
@@ -887,6 +699,59 @@ Mehr Infos zum Gartenrotschwanz findet ihr hier:
 <a href="https://ebird.org/species/comred2" target ="_blank"> Informationen bei eBird </a>
 
 
+## Gelbspötter
+```{r image_Gelbspötter, fig.cap = "Gelbspötter (Hippolais icterina). Foto von [Axel Aßmann](https://www.naturgucker.de/natur.dll/Ku5qhXEOZ~2yjhLaLgggKlDT0tO/)", out.width="75%" }
+knitr::include_graphics("images/Hippolais-icterina.webp", dpi = 75)
+
+#Freigabe erteilt für	NABU|naturgucker
+#NABU
+#CC BY-SA
+```
+
+Gelbspötter sehen eher unauffällig aus, besitzen aber einen lauten, schwätzenden Gesang und imitieren Gesänge anderer Vogelarten. Sie sind nur drei Monate an ihrem Brutgebiet und überwintern südlich des Äquators.
+
+```{r info_gelbspötter, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
+year.plot("ictwar1")
+day.plot("ictwar1")
+```
+
+Das ist ein Audiobeispiel für den Gesang des Gelbspötters:
+```{r}
+html_tag_audio("audio/Gelbspötter_6.55min_SMM05311_20230518_061502.mp3", type = "mp3")
+```
+
+Mehr Infos zum Gelbspötter findet ihr hier:
+
+<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/gelbspoetter/" target ="_blank"> Informationen vom NABU </a>
+
+<a href="https://ebird.org/species/ictwar1" target ="_blank"> Informationen bei eBird </a>
+
+
+
+## Girlitz
+```{r image_Girlitz, fig.cap = "Girlitz (Serinus serinus). Foto von [MEUM MARE](https://www.pexels.com/photo/european-serin-bird-on-tree-branches-20659793/)", out.width="50%" }
+knitr::include_graphics("images/Serinus-serinus.webp", dpi = 75)
+```
+Girlitze waren früher nur im Mittelmeergebiet heimisch, haben sich aber Richtung Norden ausgebreitet. Als Teilzieher überwintern einige jedoch im Mittelmeerraum und in Westeuropa. Auch wenn er nicht gefährdet ist, nimmt der Bestand teilweise ab, da er zunehmend erschwert Lebensraum findet.  
+
+```{r info_girlitze, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
+year.plot("eurser1")
+day.plot("eurser1")
+```
+
+Hier ist eine Hörprobe des Girlitz Gesangs:
+```{r}
+html_tag_audio("audio/Girlitz_SMU02835_20220412_060302_870_885.mp3", type = "mp3")
+```
+
+Mehr Infos zum Girlitz findet ihr hier:
+
+<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/girlitz/" target ="_blank"> Informationen vom NABU </a>
+
+<a href="https://ebird.org/species/eurser1" target ="_blank"> Informationen bei eBird </a>
+
+
+
 ## Grauschnäpper
 
 ```{r image_Grauschnäpper, fig.cap = "Grauschnäpper (Muscicapa striata). Foto von [Q L](https://www.pexels.com/photo/spotted-flycatcher-on-a-wooden-perch-in-forest-28676626/)", out.width="75%" }
@@ -910,6 +775,348 @@ Mehr Infos zum Grauschnäpper findet ihr hier:
 <a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/grauschnaepper/" target ="_blank"> Informationen vom NABU </a>
 
 <a href="https://ebird.org/species/spofly1" target ="_blank"> Informationen bei eBird </a>
+
+
+## Grünspecht
+```{r image_Grünspecht, fig.cap = "Grünspecht (Picus viridis). Foto von [Mark A Jenkins](https://www.pexels.com/photo/vibrant-green-woodpecker-in-natural-habitat-28530001/)" , out.width="75%"}
+knitr::include_graphics("images/Picus-viridis.webp", dpi = 75)
+```
+
+Der Grünspecht hat, wie der Name schon sagt, ein auffälliges grünes Gefieder, aber auch seine rote Krone und sein schwarzer Kopf stechen hervor. Er ist verhältnismäßig groß, kommt häufig vor und findet sich häufig auch auf dem Boden, wo er nach Nahrung sucht. Sein Gesang ist sehr auffällig und erinnert an das Lachen eines Menschen.
+
+```{r info_gruenspecht, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
+year.plot("eugwoo2")
+day.plot("eugwoo2")
+```
+
+So klingt der Gesang des Grünspechts:
+
+```{r}
+html_tag_audio("audio/Grünspecht_20220514_033000.WAV_375_390.mp3", type = "mp3")
+```
+
+
+Mehr Infos zum Grünspecht findet ihr hier:
+
+<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/gruenspecht/" target ="_blank"> Informationen vom NABU </a>
+
+<a href="https://ebird.org/species/eugwoo2" target ="_blank"> Informationen bei eBird </a>
+
+
+## Kleiber
+
+```{r image_kleiber, fig.cap = "Kleiber (Sitta europea). Foto von [Felix Rehm](https://www.pexels.com/photo/eurasian-nuthatch-28208893/)", out.width="75%" }
+knitr::include_graphics("images/Sitta-europea.webp", dpi = 75)
+```
+
+Kleiber haben ihren Namen redlich verdient. Als richtige Bastler verkleben sie die Eingänge von Bruthöhlen anderer Vögel wie Spechte mit Lehm, um sie dann selbst zu nutzen. Außerdem können sie als einzige Vögel einen Baum kopfüber hochklettern. Sie sind sehr standorttreu und verlassen ihr Gebiet selten. Man hört sie meist, bevor man sie sieht, ihr Ruf bei der Nahrungssuche ist scharf und spitz und um andere zu warnen nutzt er einen wie "tweet" klingenden Warnruf. Ihr Gesang ist komplex und besteht aus mehreren Strophen.
+
+```{r info_kleiber, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
+year.plot("eurnut2")
+day.plot("eurnut2")
+```
+
+Hier sind die Rufe des Kleibers als Audiobeispiel:
+```{r}
+html_tag_audio("audio/Kleiber.mp3", type = "mp3")
+```
+
+Mehr Infos zum Kleiber findet ihr hier:
+
+<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/kleiber/" target ="_blank"> Informationen vom NABU </a>
+
+<a href="https://ebird.org/species/eurnut2" target ="_blank"> Informationen bei eBird </a>
+
+
+
+## Kohlmeise
+```{r image_Kohlmeise, fig.cap = "Kohlmeise (Parus major). Foto von [Monique Laats](https://www.pexels.com/photo/black-and-gray-bird-on-body-of-water-736520/)", out.width="75%" }
+knitr::include_graphics("images/Parus-major.webp", dpi = 75)
+```
+
+Kohlmeisen sind zutrauliche Vögel, die häufig in Gärten anzutreffen und an ihrer Färbung leicht erkennbar sind. Sie haben ein großes Verbreitungsgebiet und sind bis auf den nördlichsten Teil und einigen Hochgebirgen Fennoskandiens auf dem gesamten Europäischen Festland anzutreffen.
+
+```{r info_kohlmeisen, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
+year.plot("gretit1")
+day.plot("gretit1")
+```
+
+Das sind die Rufe der Kohlmeise:
+```{r}
+html_tag_audio("audio/Kohlmeise_2min_SMU02919_20240403_050000.mp3", type = "mp3")
+```
+
+Mehr Infos zur Kohlmeise findet ihr hier:
+
+<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/kohlmeise/" target ="_blank"> Informationen vom NABU </a>
+
+<a href="https://ebird.org/species/gretit1" target ="_blank"> Informationen bei eBird </a>
+
+
+
+## Mauersegler
+```{r image_Mauersegler, fig.cap = "Mauersegler (Apus apus). Foto von [Mahmoud Yahyaoui](https://www.pexels.com/photo/flying-common-swift-bird-21852469/)", out.width="75%" }
+knitr::include_graphics("images/Apus-apus.webp", dpi = 75)
+```
+
+Mauersegler befinden sich den Großteils ihres Lebens in der Luft und landen nur zum Brüten und zur Aufzucht. Ihr Körperbau ist ans Fliegen angepasst und sie sind gut durch ihre schmalen, sichelförmigen Flügel und dem langen Gleitflug erkennbar. Auch die Nahrung wird in der Luft gefangen und dann in ihrem Kehlsack gesammelt und zu den Jungen transportiert. Diese warten in den Nestern, die der Mauersegler in Mauerspalten oder nah unter Dächern baut.
+
+```{r info_mauersegler, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
+year.plot("comswi")
+day.plot("comswi")
+```
+
+So klingen die Flugrufe der Mauersegler:
+```{r}
+html_tag_audio("audio/Mauersegler_SMU03012_20220523_210000_735_750.mp3", type = "mp3")
+```
+
+Mehr Infos zum Mauersegler findet ihr hier:
+
+<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/mauersegler/" target ="_blank"> Informationen vom NABU </a>
+
+<a href="https://ebird.org/species/comswi" target ="_blank"> Informationen bei eBird </a>
+
+
+## Mönchsgrasmücke
+
+```{r image_Mönchsgrasmücke, fig.cap = "Mönchsgrasmücke (Sylvia atricapilla). Foto von [Kenny Egido](https://www.pexels.com/photo/close-up-shot-of-a-eurasian-blackcap-perched-on-a-tree-branch-13027388/)" , out.width="75%"}
+knitr::include_graphics("images/Sylvia-atricapilla.webp", dpi = 75)
+```
+
+Diese Vögel sind recht einheitlich grau, nur am Kopf hat das Männchen eine schwarze und das Weibchen eine rotbraune Färbung, was an die Kappe eines Mönchs erinnert. Ihr Ruf hört sich an, als würde man zwei Kieselsteine aneinanderschlagen. 
+
+
+```{r info_moenchsgrasmuecke, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
+year.plot("blackc1")
+day.plot("blackc1")
+```
+
+So klingt der Gesang der Mönchsgrasmücke:
+```{r}
+html_tag_audio("audio/Moenchsgrasmuecke2.mp3", type = "mp3")
+```
+
+Mehr Infos zur Mönchsgrasmücke findet ihr hier:
+
+<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/moenchsgrasmuecke/" target ="_blank"> Informationen vom NABU </a>
+
+<a href="https://ebird.org/species/blackc1" target ="_blank"> Informationen bei eBird </a>
+
+
+
+
+
+
+
+
+
+## Nachtigall
+
+```{r image_Nachtigall, fig.cap = "Nachtigall (Luscinia megarhynchos). Foto von [Dariusz Grosa](https://www.pexels.com/photo/brown-bird-perched-2570161/)" , out.width="75%"}
+knitr::include_graphics("images/Luscinia-megarhynchos.webp", dpi = 75)
+```
+
+Die Nachtigall sieht zwar etwas unscheinbar aus, aber ihr schöner Gesang ist wohl der berühmteste aller Singvögel. Sie ist, wie bei „Romeo und Julia", ein beliebtes Motiv in der Literatur und findet sich in Redewendungen wie das berlinerische „Nachtigall, ick hör dir tapsen". Den äußerst variablen Gesang, der gerne als "unvorhersehbar" oder "phantasievoll" beschrieben wird, hört man nachts vom balzenden Männchen. Nachtigallen sind Zugvögel und überwintern in den tropischen Regionen Afrikas.
+
+
+```{r info_nachtigall, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
+year.plot("comnig1")
+day.plot("comnig1")
+```
+
+So hat die Nachtigall im Park gesungen:
+```{r}
+html_tag_audio("audio/Nachtigall.mp3", type = "mp3")
+```
+
+Mehr Infos zur Nachtigall findet ihr hier:
+
+<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/nachtigall/" target ="_blank"> Informationen vom NABU </a>
+
+<a href="https://ebird.org/species/comnig1" target ="_blank"> Informationen bei eBird </a>
+
+
+
+## Nebelkrähe
+```{r image_Nebelkrähe, fig.cap = "Nebelkrähe (Corvus cornix). Foto von [Jenő Medgyesi](https://www.pexels.com/photo/dolmanous-crow-bird-watching-12875267/)", out.width="75%" }
+knitr::include_graphics("images/Corvus-cornix.webp", dpi = 75)
+```
+Im Osten von Deutschland und Europa ist die Nebelkrähe ein häufiger Brutvogel, während im Westen die eng verwandte Rabenkrähe ihr Verbreitungsgebiet hat. Während die Rabenkrähe komplett schwarz ist, hat die Nebelkrähe zwar einen schwarz glänzenden Kopf, Kehle, Flügel, Schwanz und Schenkfedern, ist aber ansonsten aschgrau gefärbt. An der Grenze der Verbreitungsgebiete der beiden Arten kommen Hybride vor. Nebelkrähen sind Allesfresser und ernähren sich neben Samen, Früchten und Abfall auch gerne von Nüssen, die sie aus großer Höhe auf harten Boden fallen lassen, um sie zu öffnen. 
+
+```{r info_nebelkraehe, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
+year.plot("hoocro1")
+day.plot("hoocro1")
+```
+
+
+Das sind die Rufe der Nebelkrähe:
+```{r}
+html_tag_audio("audio/Nebelkrähe_SMU07778_20230507_211502.mp3", type = "mp3")
+```
+
+
+Mehr Infos zur Nebelkrähe findet ihr hier:
+
+<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/nebelkraehe/" target ="_blank"> Informationen vom NABU </a>
+
+<a href="https://ebird.org/species/hoocro1" target ="_blank"> Informationen bei eBird </a>
+
+
+## Ringeltaube
+
+```{r image_Ringeltaube, fig.cap = "Ringeltaube (Columba palumbus). Foto von [Patrick Schulze](https://www.pexels.com/photo/two-pigeons-perching-on-a-branch-23383222/)", out.width="50%" }
+knitr::include_graphics("images/Columba-palumbus.webp", dpi = 75)
+```
+
+Ringeltauben finden sich sehr häufig und sind leicht zu bestimmen. Der große graublaue Vogel hat am Hals einen türkisfarbenen und weißen Fleck und auch auf der Flügeln trägt sie eine große weiße Markierung.
+
+
+```{r info_ringeltaube, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
+year.plot("cowpig1")
+day.plot("cowpig1")
+```
+
+Das ist der Gesang der Ringeltaube:
+```{r}
+html_tag_audio("audio/Ringeltaube.mp3", type = "mp3")
+```
+
+Mehr Infos zur Ringeltaube findet ihr hier:
+
+<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/ringeltaube/" target ="_blank"> Informationen vom NABU </a>
+
+<a href="https://ebird.org/species/cowpig1" target ="_blank"> Informationen bei eBird </a>
+
+
+## Rotdrossel
+```{r image_Rotdrossel, fig.cap = "Rotdrossel (Turdus iliacus). Foto von [Denitsa Kireva](https://www.pexels.com/photo/bird-on-pebbles-16752486/)", out.width="50%" }
+knitr::include_graphics("images/Turdus-iliacus.webp", dpi = 75)
+```
+
+Diese Vögel mit den orangenen Flanken und einem hellen Überaugenstreif brüten in Nord- und Osteuropa. In Ausnahmefällen überwintern sie in Deutschland, ziehen jedoch meist weiter Richtung Südeuropa, Nordafrika und Mitteleuropa. Ihr Gesang ist deshalb auch sehr unwahrscheinlich bei uns zu hören, häufiger hört man nachts ihren hohen, langgezogenen Flug- oder Zugruf. Sie leben gerne in großen Parks, Laub- und Mischwäldern.
+
+```{r info_rotdrossel, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
+year.plot("redwin")
+day.plot("redwin")
+```
+
+Hörprobe der Rotdrossel:
+```{r}
+html_tag_audio("audio/Rotdrossel_SMU07821_20230401_061502.mp3", type = "mp3")
+```
+
+Mehr Infos zur Rotdrossel findet ihr hier:
+
+<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/rotdrossel/" target ="_blank"> Informationen vom NABU </a>
+
+<a href="https://ebird.org/species/redwin" target ="_blank"> Informationen bei eBird </a>
+
+
+## Rotkehlchen
+
+```{r image_Rotkehlchen, fig.cap = "Rotkehlchen (Erithacus rubecula). Foto von [Pixabay](https://www.pexels.com/photo/orange-white-brown-bird-on-top-of-red-branch-67849/)" , out.width="75%"}
+knitr::include_graphics("images/Erithacus-rubecula.webp", dpi = 75)
+```
+
+Wie man sich aus dem Namen schon denken kann, hat das Rotkehlchen eine orangefarbene Kehle, Brust und Stirn. Im Vergleich zu anderen Vögeln ist es sehr zutraulich und im Garten häufig zu finden. Gerade wenn ein Beet umgegraben wird, sucht es dort gerne schnell nach Nahrung wie Würmern oder Spinnen. Rotkehlchen haben eine Reihe von verschiedenen leichte melancholischen Gesängen, die in einer „perlenden“ Strophe enden.
+
+
+```{r info_rotkehlchen, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
+year.plot("eurrob1")
+day.plot("eurrob1")
+```
+
+Hier ist ein Audiobeispiel des Gesangs des Rotkehlchens:
+```{r}
+html_tag_audio("audio/Rotkehlchen.mp3", type = "mp3")
+```
+
+Mehr Infos zum Rotkehlchen findet ihr hier:
+
+<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/rotkehlchen/" target ="_blank"> Informationen vom NABU </a>
+
+<a href="https://ebird.org/species/eurrob1" target ="_blank"> Informationen bei eBird </a>
+
+## Singdrossel
+
+```{r image_Singdrossel, fig.cap = "Singdrossel (Turdus philomelos). Foto von [Petr Ganaj](https://www.pexels.com/photo/song-thrush-standing-in-grass-19161378/)" , out.width="75%"}
+knitr::include_graphics("images/Turdus-philomelos.webp", dpi = 75)
+```
+
+Singdrosseln sind Kurzstreckenzieher, die vorwiegend in Südeuropa überwintern. Während die Oberseite einfarbig braun gefärbt ist, finden sich auf der weißen Unterseite dunkle, keilförmigen Flecken. Sie lässt sich gut an ihrem namensgebenden Gesang erkennen.
+
+
+```{r info_singdrossel, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
+year.plot("sonthr1")
+day.plot("sonthr1")
+```
+
+So klingt die Singdrossel wenn sie singt:
+```{r}
+html_tag_audio("audio/Singdrossel.mp3", type = "mp3")
+```
+
+Mehr Infos zur Singdossel findet ihr hier:
+
+<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/singdrossel/" target ="_blank"> Informationen vom NABU </a>
+
+<a href="https://ebird.org/species/sonthr1" target ="_blank"> Informationen bei eBird </a>
+
+
+## Sommergoldhähnchen
+
+```{r image_Sommergoldhaenchen, fig.cap = "Sommergoldhähnchen (Regulus ignicapilla). Foto von [Alexis LOURS](https://www.pexels.com/photo/firecrest-bird-spreading-wings-in-french-forest-29151011/)" , out.width="75%"}
+knitr::include_graphics("images/Regulus-ignicapilla.webp", dpi = 75)
+```
+
+Anders als die Wintergoldhänchen, die das ganze Jahr über bei uns zu sehen sind, sind Sommergoldhähnchen Zugvögel und meist nur von März bis September bei uns zu beobachten. Sommergoldhähnchen sind nur minimal größer als Wintergoldhänchen, die die kleinsten Vögel Europas sind, und haben neben dem markanten Scheitelstreif eine schwarze Musterung um die Augen. Sie sind viel in Bewegung und in Baumkronen von Parks, Laub- und Mischwäldern zu finden.
+
+```{r info_sommergoldhaehnchen, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
+year.plot("firecr1")
+day.plot("firecr1")
+```
+
+Das ist der Gesang des Sommergoldhähnchens...:
+```{r}
+html_tag_audio("audio/Sommergoldhaenchen_gesang.mp3", type = "mp3")
+```
+
+...und das ihr Ruf:
+
+```{r}
+html_tag_audio("audio/Sommergoldhaenchen_ruf.mp3", type = "mp3")
+```
+Mehr Infos zum Sommergoldhähnchen findet ihr hier:
+
+<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/sommergoldhaehnchen/" target ="_blank"> Informationen vom NABU </a>
+
+<a href="https://ebird.org/species/firecr1" target ="_blank"> Informationen bei eBird </a>
+
+
+
+## Sumpfmeise
+```{r image_Sumpfmeise, fig.cap = "Sumpfmeise (Poecile palustris). Foto von [Erik Karits](https://www.pexels.com/photo/close-up-of-small-bird-on-branch-6589083/)", out.width="75%" }
+knitr::include_graphics("images/Poecile-palustris.webp", dpi = 75)
+```
+Die Oberseite des Gefieders der Sumpfmeise ist braun, die Unterseite hell. Von der Stirn bis in den Nacken ist der Kopf schwarz gefärbt, genauso wie ein schmaler Fleck am Kinn. Sie leben in feuchten Wäldern mit viel Totholz, in denen sie sich Baumhöhlen zum Brüten suchen und Nahrungsvorräte anlegen.
+
+```{r info_sumpfmeise, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
+year.plot("martit2")
+day.plot("martit2")
+```
+
+
+So klingen die Rufe der Sumpfmeise:
+```{r}
+html_tag_audio("audio/Sumpfmeise_SMU02837_20220617_064502_855_870.mp3", type = "mp3")
+```
+
+Mehr Infos zur Sumpfmeise findet ihr hier:
+
+<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/sumpfmeise/" target ="_blank"> Informationen vom NABU </a>
+
+<a href="https://ebird.org/species/martit2" target ="_blank"> Informationen bei eBird </a>
 
 
 
@@ -966,6 +1173,32 @@ Mehr Infos zum Star findet ihr hier:
 <a href="https://ebird.org/species/eursta" target ="_blank"> Informationen bei eBird </a>
 
 
+## Trauerschnäpper
+
+```{r image_trauerschnaepper, fig.cap = "Trauerschnäpper (Ficedula hypoleuca). Foto von [Jürgen](https://www.pexels.com/photo/warbler-perching-on-branch-16944312/)" , out.width="75%"}
+knitr::include_graphics("images/Ficedula-hypoleuca.webp", dpi = 75)
+```
+
+Trauerschnäpper sind Langstreckenzieher. Während sie den Winter in den afrikanischen Tropen verbringen, sind sie bei uns zwischen April und September häufig anzutreffen. Die Männchen sind auf der Oberseite dunkelbraun bis schwarz, die Weibchen hellbraun. Die Unterseite und die Flügelflecken hingegen sind weiß. 
+
+
+```{r info_trauerschnaepper, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
+year.plot("eupfly1")
+day.plot("eupfly1")
+```
+
+So klingt der Gesang eines Trauerschnäppers:
+```{r}
+html_tag_audio("audio/Trauerschnaepper.mp3", type = "mp3")
+```
+
+Mehr Infos zum Trauerschnäpper findet ihr hier:
+
+<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/trauerschnaepper/" target ="_blank"> Informationen vom NABU </a>
+
+<a href="https://ebird.org/species/eupfly1" target ="_blank"> Informationen bei eBird </a>
+
+
 
 ## Waldbaumläufer
 
@@ -990,6 +1223,35 @@ Das ist der Ruf des Waldbaumläufers:
 ```{r}
 html_tag_audio("audio/Waldbaumläufer_3.4min_SMM05246_20240406_060002.mp3", type = "mp3")
 ```
+
+
+## Waldkauz
+
+```{r image_Waldkauz, fig.cap = "Waldkauz (Strix aluco). Foto von [D H J](https://www.pexels.com/photo/owl-sitting-in-tree-nest-10989038/)" , out.width="50%"}
+knitr::include_graphics("images/Strix-aluco.webp", dpi = 75)
+```
+
+Bekannt sind Waldkäuze für ihren Reviergesang. Besonders das langgezogene, heulende Huh-Huhuhu-Huuuh des Männchens, was man in den Dämmerungsstunden hören kann ist ein bekanntes Motiv. Das Weibchen antwortet mit "Kuwitt", was im Aberglauben als "Komm-mit!" des "Totenvogels" bezeichnet wird.
+
+Waldkäuze sind beachtliche Jäger, zu deren Beute auch Tiere ihres Gewichts, wie z.B. Eichhörnchen zählen. Der Tagesdurchschnittsbedarf eines Kauzes entspricht dem Gewicht von etwa vier Feldmäusen. Die Tiere werden komplett verschluckt, erst wenn der Vogel an einem Rastplatz oder einem Jagdansitz verharrt, wird das Gewöll hochgewürgt.
+
+
+```{r info_waldkauz, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
+year.plot("tawowl1")
+day.plot("tawowl1")
+```
+
+Hier ist eine Hörprobe des Warnrufes des Waldkauz Weibchens:
+```{r}
+html_tag_audio("audio/Waldkauz.mp3", type = "mp3")
+```
+
+Mehr Infos zum Waldkauz findet ihr hier:
+
+<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/waldkauz/" target ="_blank"> Informationen vom NABU </a>
+
+<a href="https://ebird.org/species/tawowl1" target ="_blank"> Informationen bei eBird </a>
+
 
 
 ## Zaunkönig
@@ -1018,155 +1280,6 @@ Mehr Infos zum Zaunkönig findet ihr hier:
 <a href="https://ebird.org/species/winwre4" target ="_blank"> Informationen bei eBird </a>
 
 
-## Rotdrossel
-```{r image_Rotdrossel, fig.cap = "Rotdrossel (Turdus iliacus). Foto von [Denitsa Kireva](https://www.pexels.com/photo/bird-on-pebbles-16752486/)", out.width="50%" }
-knitr::include_graphics("images/Turdus-iliacus.webp", dpi = 75)
-```
-
-Diese Vögel mit den orangenen Flanken und einem hellen Überaugenstreif brüten in Nord- und Osteuropa. In Ausnahmefällen überwintern sie in Deutschland, ziehen jedoch meist weiter Richtung Südeuropa, Nordafrika und Mitteleuropa. Ihr Gesang ist deshalb auch sehr unwahrscheinlich bei uns zu hören, häufiger hört man nachts ihren hohen, langgezogenen Flug- oder Zugruf. Sie leben gerne in großen Parks, Laub- und Mischwäldern.
-
-```{r info_rotdrossel, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
-year.plot("redwin")
-day.plot("redwin")
-```
-
-Hörprobe der Rotdrossel:
-```{r}
-html_tag_audio("audio/Rotdrossel_SMU07821_20230401_061502.mp3", type = "mp3")
-```
-
-Mehr Infos zur Rotdrossel findet ihr hier:
-
-<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/rotdrossel/" target ="_blank"> Informationen vom NABU </a>
-
-<a href="https://ebird.org/species/redwin" target ="_blank"> Informationen bei eBird </a>
-
-
-
-## Sumpfmeise
-```{r image_Sumpfmeise, fig.cap = "Sumpfmeise (Poecile palustris). Foto von [Erik Karits](https://www.pexels.com/photo/close-up-of-small-bird-on-branch-6589083/)", out.width="75%" }
-knitr::include_graphics("images/Poecile-palustris.webp", dpi = 75)
-```
-Die Oberseite des Gefieders der Sumpfmeise ist braun, die Unterseite hell. Von der Stirn bis in den Nacken ist der Kopf schwarz gefärbt, genauso wie ein schmaler Fleck am Kinn. Sie leben in feuchten Wäldern mit viel Totholz, in denen sie sich Baumhöhlen zum Brüten suchen und Nahrungsvorräte anlegen.
-
-```{r info_sumpfmeise, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
-year.plot("martit2")
-day.plot("martit2")
-```
-
-
-So klingen die Rufe der Sumpfmeise:
-```{r}
-html_tag_audio("audio/Sumpfmeise_SMU02837_20220617_064502_855_870.mp3", type = "mp3")
-```
-
-Mehr Infos zur Sumpfmeise findet ihr hier:
-
-<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/sumpfmeise/" target ="_blank"> Informationen vom NABU </a>
-
-<a href="https://ebird.org/species/martit2" target ="_blank"> Informationen bei eBird </a>
-
-
-
-## Nebelkrähe
-```{r image_Nebelkrähe, fig.cap = "Nebelkrähe (Corvus cornix). Foto von [Jenő Medgyesi](https://www.pexels.com/photo/dolmanous-crow-bird-watching-12875267/)", out.width="75%" }
-knitr::include_graphics("images/Corvus-cornix.webp", dpi = 75)
-```
-Im Osten von Deutschland und Europa ist die Nebelkrähe ein häufiger Brutvogel, während im Westen die eng verwandte Rabenkrähe ihr Verbreitungsgebiet hat. Während die Rabenkrähe komplett schwarz ist, hat die Nebelkrähe zwar einen schwarz glänzenden Kopf, Kehle, Flügel, Schwanz und Schenkfedern, ist aber ansonsten aschgrau gefärbt. An der Grenze der Verbreitungsgebiete der beiden Arten kommen Hybride vor. Nebelkrähen sind Allesfresser und ernähren sich neben Samen, Früchten und Abfall auch gerne von Nüssen, die sie aus großer Höhe auf harten Boden fallen lassen, um sie zu öffnen. 
-
-```{r info_nebelkraehe, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
-year.plot("hoocro1")
-day.plot("hoocro1")
-```
-
-
-Das sind die Rufe der Nebelkrähe:
-```{r}
-html_tag_audio("audio/Nebelkrähe_SMU07778_20230507_211502.mp3", type = "mp3")
-```
-
-
-Mehr Infos zur Nebelkrähe findet ihr hier:
-
-<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/nebelkraehe/" target ="_blank"> Informationen vom NABU </a>
-
-<a href="https://ebird.org/species/hoocro1" target ="_blank"> Informationen bei eBird </a>
-
-## Mauersegler
-```{r image_Mauersegler, fig.cap = "Mauersegler (Apus apus). Foto von [Mahmoud Yahyaoui](https://www.pexels.com/photo/flying-common-swift-bird-21852469/)", out.width="75%" }
-knitr::include_graphics("images/Apus-apus.webp", dpi = 75)
-```
-
-Mauersegler befinden sich den Großteils ihres Lebens in der Luft und landen nur zum Brüten und zur Aufzucht. Ihr Körperbau ist ans Fliegen angepasst und sie sind gut durch ihre schmalen, sichelförmigen Flügel und dem langen Gleitflug erkennbar. Auch die Nahrung wird in der Luft gefangen und dann in ihrem Kehlsack gesammelt und zu den Jungen transportiert. Diese warten in den Nestern, die der Mauersegler in Mauerspalten oder nah unter Dächern baut.
-
-```{r info_mauersegler, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
-year.plot("comswi")
-day.plot("comswi")
-```
-
-So klingen die Flugrufe der Mauersegler:
-```{r}
-html_tag_audio("audio/Mauersegler_SMU03012_20220523_210000_735_750.mp3", type = "mp3")
-```
-
-Mehr Infos zum Mauersegler findet ihr hier:
-
-<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/mauersegler/" target ="_blank"> Informationen vom NABU </a>
-
-<a href="https://ebird.org/species/comswi" target ="_blank"> Informationen bei eBird </a>
-
-
-## Girlitz
-```{r image_Girlitz, fig.cap = "Girlitz (Serinus serinus). Foto von [MEUM MARE](https://www.pexels.com/photo/european-serin-bird-on-tree-branches-20659793/)", out.width="50%" }
-knitr::include_graphics("images/Serinus-serinus.webp", dpi = 75)
-```
-Girlitze waren früher nur im Mittelmeergebiet heimisch, haben sich aber Richtung Norden ausgebreitet. Als Teilzieher überwintern einige jedoch im Mittelmeerraum und in Westeuropa. Auch wenn er nicht gefährdet ist, nimmt der Bestand teilweise ab, da er zunehmend erschwert Lebensraum findet.  
-
-```{r info_girlitze, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
-year.plot("eurser1")
-day.plot("eurser1")
-```
-
-Hier ist eine Hörprobe des Girlitz Gesangs:
-```{r}
-html_tag_audio("audio/Girlitz_SMU02835_20220412_060302_870_885.mp3", type = "mp3")
-```
-
-Mehr Infos zum Girlitz findet ihr hier:
-
-<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/girlitz/" target ="_blank"> Informationen vom NABU </a>
-
-<a href="https://ebird.org/species/eurser1" target ="_blank"> Informationen bei eBird </a>
-
-
-
-## Gelbspötter
-```{r image_Gelbspötter, fig.cap = "Gelbspötter (Hippolais icterina). Foto von [Axel Aßmann](https://www.naturgucker.de/natur.dll/Ku5qhXEOZ~2yjhLaLgggKlDT0tO/)", out.width="75%" }
-knitr::include_graphics("images/Hippolais-icterina.webp", dpi = 75)
-
-#Freigabe erteilt für	NABU|naturgucker
-#NABU
-#CC BY-SA
-```
-
-Gelbspötter sehen eher unauffällig aus, besitzen aber einen lauten, schwätzenden Gesang und imitieren Gesänge anderer Vogelarten. Sie sind nur drei Monate an ihrem Brutgebiet und überwintern südlich des Äquators.
-
-```{r info_gelbspötter, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
-year.plot("ictwar1")
-day.plot("ictwar1")
-```
-
-Das ist ein Audiobeispiel für den Gesang des Gelbspötters:
-```{r}
-html_tag_audio("audio/Gelbspötter_6.55min_SMM05311_20230518_061502.mp3", type = "mp3")
-```
-
-Mehr Infos zum Gelbspötter findet ihr hier:
-
-<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/gelbspoetter/" target ="_blank"> Informationen vom NABU </a>
-
-<a href="https://ebird.org/species/ictwar1" target ="_blank"> Informationen bei eBird </a>
-
 
 
 # Kooperationen
@@ -1194,7 +1307,7 @@ Das Projekt erfolgt mit freundlicher Unterstützung der [Stiftung Preußische Sc
 
 </div>
 
-#### Kontakt
+<h3>Kontakt</h3>
 
 <a href="https://www.uni-potsdam.de/de/ibb-macroecology/index" target="_blank"> Ökologie und Makroökologie </a> 
 
@@ -1205,3 +1318,9 @@ Maulbeerallee 3
 14469 Potsdam
 
 E-Mail: office-macroeco@uni-potsdam.de
+
+<h3>weitere Informationen</h3>
+
+Informationn zum Datenschutz finden Sie <a href="https://www.uni-potsdam.de/de/ibb-macroecology/forschung/audiomonitoring" target="_blank">hier</a>.
+
+Die Algorithmen sind über <a href="https://github.com/kahst/BirdNET-Analyzer" target="_blank">GitHub </a> zugänglich.

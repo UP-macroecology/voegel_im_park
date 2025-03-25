@@ -18,6 +18,7 @@ csl: ecology.csl
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, cache=F, dpi=200, message=FALSE)
 # setwd("/home/clara/Documents/Bewerbungskram - Jobs/UP - Zurell - Macroecology/MacroecoJobCode/Audiodetectors_listing_species/website_park/")
+# setwd("/home/clara/Documents/Bewerbungskram - Jobs/UP - Zurell - Macroecology/MacroecoJobCode/Audiodetectors_listing_species/website_20250317")
 setwd("~/Documents/00_GitHub_Macro/Audiodetectors_listing_species/website_park")
 ##anpassen natürlich
 pagebreak <- function() {
@@ -46,6 +47,7 @@ box_locs = fread("tables/Nest_boxed_metadata.csv")
 
 artenliste_raw = fread("tables/bird_obs_TOP55_20250130.csv") #bird_obs2025
 artenliste_raw = artenliste_raw %>%
+  filter(spec != "bcnher") %>% # Exclude Nachtreiher
   filter(month(obs.temp.res) %in% c(4,5))
 
 translation = read.csv2("tables/species_meta_dt.csv", sep=",")
@@ -247,7 +249,7 @@ day.plot = function(x){
         axis.title = element_text(size = 14, color = "grey40"),
         axis.text = element_text(size = 12, color = "grey40"))+
   scale_fill_manual(values=year.cols) +
-  scale_x_datetime(date_breaks = "60 mins", date_labels = "%H:%M" )+
+  scale_x_datetime(date_breaks = "60 mins", date_labels = "%H:%M", timezone = "Etc/GMT-3")+ # no automatic summer/winter time! "Europe/Berlin" not working
       guides(fill = guide_legend(nrow = 1))+
  labs(y= "Detektionen pro 10 min", x = "Uhrzeit", title = "Akustische Tagesaktivität")
       )
@@ -644,6 +646,30 @@ Mehr Infos zum Buntspecht findet ihr hier:
 <a href="https://ebird.org/species/grswoo" target ="_blank"> Informationen bei eBird </a>
 
 
+## Dohle
+```{r image_dohle, fig.cap = "Dohle (Coloeus monedula). Foto von [Daniil Komov](https://www.pexels.com/photo/black-bird-on-green-grass-10188870/)", out.width="75%" }
+knitr::include_graphics("images/Coloeus-monedula.webp", dpi = 75)
+```
+
+Dohlen gehören zu den Rabenvögeln. Im Vergleich zu anderen Krähen sind sie kleiner, haben einen dunkelgrau bis schwarzen Körper und einen helleren Nacken. Die weißen Augen und ihr neugieriger Blick stechen heraus. Dohlen werden als frech und diebisch beschrieben und sind generell sehr gesellige Vögel. Wenn gerade keine Brutsaison ist, sind sie häufig in Scharen von Hunderten Vögeln auf Ackerflächen, in Parklandschaften aber auch Städten zu finden.
+
+```{r info_dohle, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
+year.plot("eurjac")
+day.plot("eurjac")
+```
+
+Hier ist ein Hörbeispiel für den Ruf der Dohle:
+```{r}
+html_tag_audio("audio/Dohle_ruf_SMU07821_20240529_050000.mp3", type = "mp3")
+```
+
+Mehr Infos zur Dohle findet ihr hier:
+
+<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/dohle/" target ="_blank"> Informationen vom NABU </a>
+
+<a href="https://ebird.org/species/eurjac" target ="_blank"> Informationen bei eBird </a>
+
+
 ## Gartenbaumläufer
 ```{r image_gartenbaumläufer, fig.cap = "Gartenbaumläufer (Certhia brachydactyla). Foto von [Petr Ganaj](https://www.pexels.com/photo/short-toed-treecreeper-perched-on-a-thin-tree-trunk-18930350/)", out.width="75%" }
 knitr::include_graphics("images/Certhia-brachydactyla.webp", dpi = 75)
@@ -803,6 +829,31 @@ Mehr Infos zum Grünspecht findet ihr hier:
 <a href="https://ebird.org/species/eugwoo2" target ="_blank"> Informationen bei eBird </a>
 
 
+## Kernbeißer
+
+```{r image_kernbeißer, fig.cap = "Kernbeißer (Coccothraustes coccothraustes). Foto von [Holger Uwe Schmitt](https://commons.wikimedia.org/w/index.php?curid=101350547)", out.width="75%" }
+knitr::include_graphics("images/Coccothraustes-coccothraustes.webp", dpi = 75)
+```
+
+Kernbeißer sind die größten Finken die bei uns anzutreffen sind. Ihren Namen verdanken sie ihrem Schnabel, mit dem sie so viel Kraft aufbringen können, dass sie sogar Kirschkerne knacken können. Neben Bucheckern und anderen Samen und Kernen stehen auch Insekten auf dem Speiseplan. Man erkennt sie neben dem graublauen bis gelblichen Schnabel gut an ihrer Färbung. Die Brust ist beige, die Schwungfedern dunkel glänzend, im Kontrast zum gruaen Nackenband unter dem orangenen Kopf. Im Flug sieht man die weiße breite Schwanzspitze gut.
+
+```{r info_kernbeißer, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
+year.plot("hawfin")
+day.plot("hawfin")
+```
+
+Hier sind die Rufe des Kernbeißers als Audiobeispiel:
+```{r}
+html_tag_audio("audio/Kernbeisser_5m_SMM05281_20230419_063002.mp3", type = "mp3")
+```
+
+Mehr Infos zum Kernbeißer findet ihr hier:
+
+<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/kernbeisser/" target ="_blank"> Informationen vom NABU </a>
+
+<a href="https://ebird.org/species/hawfin" target ="_blank"> Informationen bei eBird </a>
+
+
 ## Kleiber
 
 ```{r image_kleiber, fig.cap = "Kleiber (Sitta europea). Foto von [Felix Rehm](https://www.pexels.com/photo/eurasian-nuthatch-28208893/)", out.width="75%" }
@@ -876,6 +927,31 @@ Mehr Infos zum Mauersegler findet ihr hier:
 <a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/mauersegler/" target ="_blank"> Informationen vom NABU </a>
 
 <a href="https://ebird.org/species/comswi" target ="_blank"> Informationen bei eBird </a>
+
+
+## Mittelspecht
+
+```{r image_Mittelspecht, fig.cap = "Mittelspecht (Dendrocoptes medius). Foto von [Maren Winter](https://commons.wikimedia.org/w/index.php?curid=57113052)" , out.width="75%"}
+knitr::include_graphics("images/Dendrocoptes-medius.webp", dpi = 75)
+```
+
+Mittelspechte erkennt man leicht an ihrer roten Kopfplatte, den gestrichelten Flanken und den hellroten Unterschwanzdecken. Wie der Name schon sagt ist er im Vergleich zu anderen Spechtarten mittelgroß und gerne in Laubwäldern unterwegs. Anders als der Buntspecht trommelt er weniger, dafür hört man seine Simme in Form schneller "kücks" Laute.
+
+```{r info_mittelspecht, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
+year.plot("miswoo1")
+day.plot("miswoo1")
+```
+
+So klingt der Ruf des Mittelspechts:
+```{r}
+html_tag_audio("audio/Mittelspecht_SMU02836_20220619_210000_135_150.mp3", type = "mp3")
+```
+
+Mehr Infos zur Mittelspecht findet ihr hier:
+
+<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/mittelspecht/" target ="_blank"> Informationen vom NABU </a>
+
+<a href="https://ebird.org/species/miswoo1" target ="_blank"> Informationen bei eBird </a>
 
 
 ## Mönchsgrasmücke
@@ -961,6 +1037,31 @@ Mehr Infos zur Nebelkrähe findet ihr hier:
 <a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/nebelkraehe/" target ="_blank"> Informationen vom NABU </a>
 
 <a href="https://ebird.org/species/hoocro1" target ="_blank"> Informationen bei eBird </a>
+
+
+## Pirol
+ 
+```{r image_Pirol, fig.cap = "Pirol (Oriolus oriolus). Foto von [Pok Rie](https://www.pexels.com/photo/black-naped-oriole-on-tree-branch-in-forest-30912678/)", out.width="75%" }
+knitr::include_graphics("images/Oriolus-oriolus.webp", dpi = 75)
+```
+
+Pirole sind aufgrund ihrer leuchtend gelben Färbung und dem Kontrast zu den schwarzen Flügeln, Schwanz und Zügen zwischen den Augen gut zu erkennen. Allerdings sind sie sehr scheue Vögel, die sich in den Baumkronen vön lichten Wäldern und Parks verstecken. Sie sind Zugvögel und überwintern im tropischen Afrika.
+
+```{r info_Pirol, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
+year.plot("eugori2")
+day.plot("eugori2")
+```
+
+Das ist der Gesang des Pirols:
+```{r}
+html_tag_audio("audio/Pirol_gesang_SMU02835_20240602_060002.mp3", type = "mp3")
+```
+
+Mehr Infos zur Pirol findet ihr hier:
+
+<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/pirol/" target ="_blank"> Informationen vom NABU </a>
+
+<a href="https://ebird.org/species/eugori2" target ="_blank"> Informationen bei eBird </a>
 
 
 ## Ringeltaube
@@ -1280,6 +1381,29 @@ Mehr Infos zum Zaunkönig findet ihr hier:
 <a href="https://ebird.org/species/winwre4" target ="_blank"> Informationen bei eBird </a>
 
 
+## Zilpzalp
+
+```{r image_Zilpzalp, fig.cap = "Zilpzalp (Phylloscopus collybita). Foto von [Connor Martin](https://www.pexels.com/photo/close-up-shot-of-yawning-common-chiffchaff-bird-9581068/)" , out.width="75%"}
+knitr::include_graphics("images/Phylloscopus-collybita.webp", dpi = 75)
+```
+
+Der Zilpzalp sieht zwar mit seinem grünoliven Kleid zwar unscheinbar aus, ist aber im Frühling und Sommer viel zu hören. Seinen Namen verdankt er seinem Gesang, der wie "zilp zalp" klingt. Sie sind häufige Vögel, die überall vorkommen, wo hohe Bäume zu finden sind. 
+
+```{r info_Zilpzalp, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
+year.plot("comchi1")
+day.plot("comchi1")
+```
+
+Hier ist eine Hörprobe des Zilpzalp Gesangs:
+```{r}
+html_tag_audio("audio/Zilpzalp_SMM05320_20240512_060002.mp3", type = "mp3")
+```
+
+Mehr Infos zum Zilpzalp findet ihr hier:
+
+<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/zilpzalp/" target ="_blank"> Informationen vom NABU </a>
+
+<a href="https://ebird.org/species/comchi1" target ="_blank"> Informationen bei eBird </a>
 
 
 # Kooperationen

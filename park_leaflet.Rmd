@@ -81,7 +81,12 @@ included.specs = c("Ringeltaube",
                     "Nebelkrähe",
                     "Mauersegler",
                     "Girlitz",
-                    "Gelbspötter"
+                    "Gelbspötter",
+                   "Dohle", 
+                   "Kernbeißer",
+                   "Pirol",
+                   "Zilpzalp",
+                   "Mittelspecht"
                     )
 
 ```
@@ -651,7 +656,7 @@ Mehr Infos zum Buntspecht findet ihr hier:
 knitr::include_graphics("images/Coloeus-monedula.webp", dpi = 75)
 ```
 
-Dohlen gehören zu den Rabenvögeln. Im Vergleich zu anderen Krähen sind sie kleiner, haben einen dunkelgrau bis schwarzen Körper und einen helleren Nacken. Die weißen Augen und ihr neugieriger Blick stechen heraus. Dohlen werden als frech und diebisch beschrieben und sind generell sehr gesellige Vögel. Wenn gerade keine Brutsaison ist, sind sie häufig in Scharen von Hunderten Vögeln auf Ackerflächen, in Parklandschaften aber auch Städten zu finden.
+Dohlen gehören zu den Rabenvögeln. Im Vergleich zu anderen Krähen sind sie kleiner, haben einen dunkelgrau bis schwarzen Körper und einen helleren Nacken. Die weißen Augen und ihr neugieriger Blick stechen heraus. Dohlen werden als frech und diebisch beschrieben und sind generell sehr gesellige Vögel. Wenn gerade keine Brutsaison ist, sind sie häufig in Scharen von Hunderten Vögeln auf Ackerflächen, in Parklandschaften, aber auch Städten zu finden.
 
 ```{r info_dohle, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
 year.plot("eurjac")
@@ -835,7 +840,7 @@ Mehr Infos zum Grünspecht findet ihr hier:
 knitr::include_graphics("images/Coccothraustes-coccothraustes.webp", dpi = 75)
 ```
 
-Kernbeißer sind die größten Finken die bei uns anzutreffen sind. Ihren Namen verdanken sie ihrem Schnabel, mit dem sie so viel Kraft aufbringen können, dass sie sogar Kirschkerne knacken können. Neben Bucheckern und anderen Samen und Kernen stehen auch Insekten auf dem Speiseplan. Man erkennt sie neben dem graublauen bis gelblichen Schnabel gut an ihrer Färbung. Die Brust ist beige, die Schwungfedern dunkel glänzend, im Kontrast zum gruaen Nackenband unter dem orangenen Kopf. Im Flug sieht man die weiße breite Schwanzspitze gut.
+Kernbeißer sind die größten Finken, die bei uns anzutreffen sind. Ihren Namen verdanken sie ihrem Schnabel, mit dem sie so viel Kraft aufbringen können, dass sie sogar Kirschkerne knacken können. Neben Bucheckern und anderen Samen und Kernen stehen auch Insekten auf dem Speiseplan. Man erkennt sie neben dem graublauen bis gelblichen Schnabel gut an ihrer Färbung. Die Brust ist beige, die Schwungfedern dunkel glänzend, im Kontrast zum grauen Nackenband unter dem orangenen Kopf. Im Flug sieht man die weiße breite Schwanzspitze gut.
 
 ```{r info_kernbeißer, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
 year.plot("hawfin")
@@ -935,7 +940,7 @@ Mehr Infos zum Mauersegler findet ihr hier:
 knitr::include_graphics("images/Dendrocoptes-medius.webp", dpi = 75)
 ```
 
-Mittelspechte erkennt man leicht an ihrer roten Kopfplatte, den gestrichelten Flanken und den hellroten Unterschwanzdecken. Wie der Name schon sagt ist er im Vergleich zu anderen Spechtarten mittelgroß und gerne in Laubwäldern unterwegs. Anders als der Buntspecht trommelt er weniger, dafür hört man seine Simme in Form schneller "kücks" Laute.
+Mittelspechte erkennt man leicht an ihrer roten Kopfplatte, den gestrichelten Flanken und den hellroten Unterschwanzdecken. Wie der Name schon sagt, ist er im Vergleich zu anderen Spechtarten mittelgroß und gerne in Laubwäldern unterwegs. Anders als der Buntspecht trommelt er weniger, dafür hört man seine Simme in Form schneller "kücks" Laute.
 
 ```{r info_mittelspecht, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
 year.plot("miswoo1")
@@ -1045,7 +1050,7 @@ Mehr Infos zur Nebelkrähe findet ihr hier:
 knitr::include_graphics("images/Oriolus-oriolus.webp", dpi = 75)
 ```
 
-Pirole sind aufgrund ihrer leuchtend gelben Färbung und dem Kontrast zu den schwarzen Flügeln, Schwanz und Zügen zwischen den Augen gut zu erkennen. Allerdings sind sie sehr scheue Vögel, die sich in den Baumkronen vön lichten Wäldern und Parks verstecken. Sie sind Zugvögel und überwintern im tropischen Afrika.
+Pirole sind aufgrund ihrer leuchtend gelben Färbung und dem Kontrast zu den schwarzen Flügeln, Schwanz und Zügen zwischen den Augen gut zu erkennen. Allerdings sind sie sehr scheue Vögel, die sich in den Baumkronen von lichten Wäldern und Parks verstecken. Sie sind Zugvögel und überwintern im tropischen Afrika.
 
 ```{r info_Pirol, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
 year.plot("eugori2")

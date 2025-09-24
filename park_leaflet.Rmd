@@ -38,14 +38,14 @@ library(ggplot2)
 library(lubridate)
 
 # data
-bird_detections = fread("tables/bird_detections_TOP55_20250124.csv")
+bird_detections = fread("tables/bird_detections_TOP55_20250924.csv")
 bird_detections = bird_detections %>%
   filter(month(date.time) %in% c(4,5),
          hour(date.time) %in% c(3,4,19,20))
 
 box_locs = fread("tables/Nest_boxed_metadata.csv")
 
-artenliste_raw = fread("tables/bird_obs_TOP55_20250130.csv") #bird_obs2025
+artenliste_raw = fread("tables/bird_obs_TOP55_20250924.csv") #bird_obs2025
 artenliste_raw = artenliste_raw %>%
   filter(spec != "bcnher",# Exclude Nachtreiher
          year(obs.temp.res)!=2022) %>% 
@@ -123,11 +123,12 @@ year.cols = c("#079999","#7f1174","#bf922a") ##747F11,
 names(year.cols) = unique(artenliste_raw$year)%>%sort()
 
 dates.for.weeks = artenliste_raw %>%
-  arrange(desc(year))%>%
+  arrange(desc(year),obs.temp.res)%>%
   group_by(week.of.year) %>%
   slice(1)%>%
   reframe(dweek.of.year = strftime(obs.temp.res, format = "%d-%m")%>%
             as.POSIXct(format = "%d-%m", tz ="UTC"))
+dates.for.weeks$dweek.of.year[dates.for.weeks$week.of.year == 22] = dates.for.weeks$dweek.of.year[dates.for.weeks$week.of.year == 22] + 5*24*3600
 
 # Location plot
 location.plot = function(x){
@@ -320,6 +321,23 @@ Die folgenden Übersichten zeigen jeweils die 5 Arten, die über alle Jahre hinw
 location.plot("alle Standorte")
 ```
 
+### 2025
+```{r Artenliste2025, results="asis",echo=FALSE}
+artenliste = left_join(artenliste_raw, box_locs[,c(1,5)])  %>%
+  filter(year == 2025)  %>% group_by(spec) %>% reframe(n = sum(n.det)) %>%
+  merge(translation[,5:7])  %>%
+  arrange(desc(n))
+
+artenliste$link = paste0(" <br><a href =#", tolower(artenliste$deutsch), ">", artenliste$deutsch,"</a>")
+  no.info.specs = which(!artenliste$deutsch %in% included.specs)
+  artenliste$link[no.info.specs] = artenliste$deutsch[no.info.specs] 
+artenliste$ebird.species = paste0("<i>", artenliste$ebird.species, "</i>")
+colnames(artenliste) = c("spec", "Anzahl Detektionen", "Art (Wisschenschaftlich)", "Art (Deutsch)", "Art (Deutsch)")
+artenliste = artenliste[, c(5,3,2)]
+
+knitr::kable(artenliste[1:10,])
+```
+
 ### 2024
 ```{r Artenliste2024, results="asis",echo=FALSE}
 artenliste = left_join(artenliste_raw, box_locs[,c(1,5)])  %>%
@@ -379,6 +397,12 @@ knitr::kable(artenliste[1:10,])
 location.plot("Rehgarten")
 ```
 
+### 2025
+```{r standort12025, results="asis",echo=FALSE}
+artenliste = artenliste.standort.jahr(1, 2025)
+knitr::kable(artenliste[1:10,])
+```
+
 ### 2024
 ```{r standort12024, results="asis",echo=FALSE}
 artenliste = artenliste.standort.jahr(1, 2024)
@@ -403,6 +427,11 @@ knitr::kable(artenliste[1:10,])
 location.plot("Fasanerie 1")
 ```
 
+### 2025
+```{r standort22025, results="asis",echo=FALSE}
+artenliste = artenliste.standort.jahr(2, 2025)
+knitr::kable(artenliste[1:10,])
+```
 ### 2024
 ```{r standort22024, results="asis",echo=FALSE}
 artenliste = artenliste.standort.jahr(2, 2024)
@@ -427,6 +456,12 @@ knitr::kable(artenliste[1:10,])
 location.plot("Fasanerie 2")
 ```
 
+
+### 2025
+```{r standort32025, results="asis",echo=FALSE}
+artenliste = artenliste.standort.jahr(3, 2025)
+knitr::kable(artenliste[1:10,])
+```
 ### 2024
 ```{r standort32024, results="asis",echo=FALSE}
 artenliste = artenliste.standort.jahr(3, 2024)
@@ -450,6 +485,13 @@ knitr::kable(artenliste[1:10,])
 ### Übersicht
 ```{r plot_interannhip, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent'),fig.cap="Die jährlichen Detektionen der 5 Arten, die insgesamt über alle Erfassungsjahre am häufigsten detektiert wurden."}
 location.plot("Hippodrom")
+```
+
+
+### 2025
+```{r standort42054, results="asis",echo=FALSE}
+artenliste = artenliste.standort.jahr(4, 2025)
+knitr::kable(artenliste[1:10,])
 ```
 
 ### 2024
@@ -477,6 +519,11 @@ knitr::kable(artenliste[1:10,])
 location.plot("Hopfengarten 1")
 ```
 
+### 2025
+```{r standort52025, results="asis",echo=FALSE}
+artenliste = artenliste.standort.jahr(5, 2025)
+knitr::kable(artenliste[1:10,])
+```
 ### 2024
 ```{r standort52024, results="asis",echo=FALSE}
 artenliste = artenliste.standort.jahr(5, 2024)
@@ -502,6 +549,11 @@ knitr::kable(artenliste[1:10,])
 location.plot("Hopfengarten 2")
 ```
 
+### 2025
+```{r standort62025, results="asis",echo=FALSE}
+artenliste = artenliste.standort.jahr(6, 2025)
+knitr::kable(artenliste[1:10,])
+```
 ### 2024
 ```{r standort62024, results="asis",echo=FALSE}
 artenliste = artenliste.standort.jahr(6, 2024)
@@ -525,6 +577,12 @@ knitr::kable(artenliste[1:10,])
 ### Übersicht
 ```{r plot_interannmarl, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent'), fig.cap="Die jährlichen Detektionen der 5 Arten, die insgesamt über alle Erfassungsjahre am häufigsten detektiert wurden."}
 location.plot("Marlygarten")
+```
+
+### 2025
+```{r standort72025, results="asis",echo=FALSE}
+artenliste = artenliste.standort.jahr(7, 2025)
+knitr::kable(artenliste[1:10,])
 ```
 
 ### 2024

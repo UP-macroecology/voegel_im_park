@@ -1,64 +1,61 @@
-@media (min-width:1000px) {
-
-    .InjectedComponents[data-position="mobile-sidebar:end"],
-    .InjectedComponents[data-position="mobile-sidebar:start"] {
-        display: block
-    }
+.sidebar-logo {
+  padding: 0 20px 20px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--border-color);
+  text-align: center;
+}
+.sidebar-logo img {
+  max-width: 250px;
+  height: auto;
 }
 
-.external-link-icon {
-    margin-left: 3px
+#mobile-sidebar-toggle {
+  display: none;
+  position: fixed;
+  top: 12px;
+  left: auto;
+  right: 12px;
+  z-index: 20;         /* above .Sidebar's z-index: 9 */
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--border-color);
+  background: var(--header-background);
+  color: var(--header-text-color);
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
 }
 
-.header-nav {
+#mobile-sidebar-mask {
+  display: none;
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,.4);
+  z-index: 8;           /* just below .Sidebar's 9 */
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .3s ease;
+}
+#mobile-sidebar-mask.isShown {
+  display: block;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (max-width: 1000px) {
+  #mobile-sidebar-toggle {
     display: flex;
-    align-items: center;
-    font-size: 1rem
+  }
+  .Sidebar {
+    padding-top: 70px;
+     left: auto;
+    right: 0;
+    transform: translateX(100%);   /* hidden: pushed off to the right */
+    border-right: none;
+    border-left: 1px solid var(--border-color);
+  }
+    .Sidebar.isShown {
+    transform: translateX(0);
+  }
 }
-
-.image-row {
-  display: flex;
-  justify-content: space-between; /* this will add equal space between each image */
-}
-
-.Sidebar {
-  background-image: url('images/220111-Wortmarke-HKS_DE.svg');
-  background-repeat: no-repeat;
-  background-position: center top;
-  margin-top: 1em;
-  background-size: 250px 150px;
-  background-blend-mode: normal;
-}
-#toc {
-  margin-top: 160px;
-}
-@media (max-width:1000px) {
-    .Sidebar {
-    	background-blend-mode: luminosity;
-      	background-image: none;
-  	background-repeat: no-repeat;
-  	background-position: left bottom;
-  	background-size: 75px calc(100vh - 75%);
- 	left: 0;
- 	margin-top: calc(100vh - 25%);
-        width: fit-content;
-        transform: translateX(calc(100vw - 100%));
-        transition: transform .5s cubic-bezier(.5, .32, .01, 1);
-        padding: 0 0;
-        border-right: 1px solid var(--border-color);
-        border-left: 1px solid var(--border-color);
-        border-top: 1px solid var(--border-color);
-        border-bottom: 1px solid var(--border-color);
-        border-radius: 15px;
-         
-    }
-	#toc {
-  		margin-top: 5px;
-	}
-.	.Content {
-		margin-top: 100em;
-	}
-	
-}
-
-

@@ -1,0 +1,49 @@
+<button id="mobile-sidebar-toggle" aria-label="Open menu" aria-expanded="false">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <line x1="3" y1="12" x2="21" y2="12"></line>
+    <line x1="3" y1="6" x2="21" y2="6"></line>
+    <line x1="3" y1="18" x2="21" y2="18"></line>
+  </svg>
+</button>
+<div id="mobile-sidebar-mask"></div>
+
+<script>
+(function() {
+  // --- Insert logo at top of sidebar ---
+  var sidebar = document.querySelector('.Sidebar');
+  if (sidebar) {
+    var logoWrap = document.createElement('div');
+    logoWrap.className = 'sidebar-logo';
+    logoWrap.innerHTML =
+      '<a href="index.html">' +
+      '<img src="images/220111-Wortmarke-HKS_DE.svg" alt="Site logo">' +
+      '</a>';
+    sidebar.insertBefore(logoWrap, sidebar.firstChild);
+  }
+  var btn = document.getElementById('mobile-sidebar-toggle');
+  var sidebar = document.querySelector('.Sidebar');
+  var mask = document.getElementById('mobile-sidebar-mask');
+  if (!btn || !sidebar || !mask) return;
+
+  function openMenu() {
+    sidebar.classList.add('isShown');
+    mask.classList.add('isShown');
+    btn.setAttribute('aria-expanded', 'true');
+  }
+  function closeMenu() {
+    sidebar.classList.remove('isShown');
+    mask.classList.remove('isShown');
+    btn.setAttribute('aria-expanded', 'false');
+  }
+
+  btn.addEventListener('click', function() {
+    sidebar.classList.contains('isShown') ? closeMenu() : openMenu();
+  });
+  mask.addEventListener('click', closeMenu);
+
+  // auto-close after tapping a TOC link
+  sidebar.addEventListener('click', function(e) {
+    if (e.target.tagName === 'A') closeMenu();
+  });
+})();
+</script>

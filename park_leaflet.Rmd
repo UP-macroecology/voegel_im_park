@@ -9,7 +9,8 @@ output:
     lightbox: true
     css: "park.css"
     toc_depth: 3
-    logo: "images/220111-Wortmarke-HKS_DE.svg"
+    includes:
+      after_body: "mobile-menu.html"
 
 link-citations: yes
 csl: ecology.csl
@@ -17,7 +18,7 @@ csl: ecology.csl
 <html lang="de">
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = FALSE, cache=F, dpi=200, message=FALSE)
-# setwd("/home/clara/Documents/Bewerbungskram - Jobs/UP - Zurell - Macroecology/MacroecoJobCode/Audiodetectors_listing_species/website_park/")
+ #setwd("/home/clara/Documents/Bewerbungskram - Jobs/UP - Zurell - Macroecology/MacroecoJobCode/website_2026/")
 # setwd("/home/clara/Documents/Bewerbungskram - Jobs/UP - Zurell - Macroecology/MacroecoJobCode/Audiodetectors_listing_species/website_20250317")
 setwd("~/Documents/00_GitHub_Macro/Audiodetectors_listing_species/website_park")
 ##anpassen natürlich
@@ -38,18 +39,19 @@ library(ggplot2)
 library(lubridate)
 
 # data
-bird_detections = fread("tables/bird_detections_TOP55_20250924.csv")
+bird_detections = fread("tables/bird_detections_TOP55_star.filt_20260714.csv")
 bird_detections = bird_detections %>%
   filter(month(date.time) %in% c(4,5),
          hour(date.time) %in% c(3,4,19,20))
 
 box_locs = fread("tables/Nest_boxed_metadata.csv")
 
-artenliste_raw = fread("tables/bird_obs_TOP55_20250924.csv") #bird_obs2025
+artenliste_raw = fread("tables/bird_obs_TOP55_star.filt_20260714.csv") #bird_obs2025
 artenliste_raw = artenliste_raw %>%
   filter(spec != "bcnher",# Exclude Nachtreiher
-         year(obs.temp.res)!=2022) %>% 
-  filter(month(obs.temp.res) %in% c(4,5))
+         year(time.win.obs)!=2022,
+         week.of.year<22) %>% 
+  filter(month(time.win.obs) %in% c(4,5))
 
 translation = read.csv2("tables/species_meta_dt.csv", sep=",")
 
@@ -87,9 +89,17 @@ included.specs = c("Ringeltaube",
                    "Kernbeißer",
                    "Pirol",
                    "Zilpzalp",
-                   "Mittelspecht"
+                   "Mittelspecht",
+                   "Stockente",
+                   "Kuckuck"
                     )
-
+top_specs_per_loc = artenliste_raw %>%
+  left_join(box_locs)%>%
+  group_by(group_name, spec)%>%
+  reframe(tot.det = sum(n.det))%>%
+  arrange(group_name,desc(tot.det))%>%
+  group_by(group_name)%>%
+  slice(1)%>%left_join(translation)
 ```
 
 
@@ -119,16 +129,16 @@ html_tag_audio = function(file, type = c("mp3")) {
       src = file,
       type = glue::glue("audio/{type}", type = type)))}
 
-year.cols = c("#079999","#7f1174","#bf922a") ##747F11,
+year.cols = c("#079999","#7f1174","#bf922a","#0146ec") 
 names(year.cols) = unique(artenliste_raw$year)%>%sort()
 
 dates.for.weeks = artenliste_raw %>%
-  arrange(desc(year),obs.temp.res)%>%
+  arrange(desc(year),time.win.obs)%>%
   group_by(week.of.year) %>%
   slice(1)%>%
-  reframe(dweek.of.year = strftime(obs.temp.res, format = "%d-%m")%>%
+  reframe(dweek.of.year = strftime(time.win.obs, format = "%d-%m")%>%
             as.POSIXct(format = "%d-%m", tz ="UTC"))
-dates.for.weeks$dweek.of.year[dates.for.weeks$week.of.year == 22] = dates.for.weeks$dweek.of.year[dates.for.weeks$week.of.year == 22] + 5*24*3600
+# dates.for.weeks$dweek.of.year[dates.for.weeks$week.of.year == 22] = dates.for.weeks$dweek.of.year[dates.for.weeks$week.of.year == 22] + 5*24*3600
 
 # Location plot
 location.plot = function(x){
@@ -181,18 +191,23 @@ location.plot = function(x){
         legend.background = element_rect(fill = 'transparent'),
         axis.title = element_text(size = 12, color = "grey40"),
         axis.text = element_text(size = 12, color = "grey40"),
-        axis.text.x = element_text(size = 9, color = "grey40"))+
+        axis.text.x = element_text(size = 8, color = "grey40",angle=22))+
   scale_fill_manual(values=year.cols) +
   guides(fill = "none")+
   labs(y= "Detektionen pro Jahr", x = "") #title = paste("5 Häufigste Arten: ",x,sep="")
 }
 
-
 # Year Plot
 year.plot = function(x){
+  if(x=="spofly1"){
+    min.week = 17
+  }else{
+    min.week = 14
+  }
  artenliste_raw %>% 
   filter(spec == x) %>%
   left_join(dates.for.weeks%>%as.data.frame()) %>%
+  filter(week.of.year >= min.week)%>% 
   group_by(year, dweek.of.year) %>% 
   reframe(n.det = sum(n.det)) %>%
  
@@ -208,8 +223,8 @@ year.plot = function(x){
         plot.margin = margin(0.3,1,0.3,0.3, "cm"),
         plot.title = element_text(hjust = 0.5,  size = 16, color = "grey40"), 
         legend.title = element_blank(), 
-        legend.position = c(0.2, 0.95), 
-        legend.text = element_text(size=12, color = "grey40"),
+        legend.position = c(0.25, 0.95), 
+        legend.text = element_text(size=10, color = "grey40"),
         legend.spacing.x = unit(.1, 'cm'),
         legend.background = element_rect(fill = 'transparent'),
         axis.title = element_text(size = 14, color = "grey40"),
@@ -225,14 +240,18 @@ day.plot = function(x){
   to.plot <- bird_detections %>%
   filter(rec.type %in% c("Songmeter", "Songmeter_Mini"), 
          nest.box != "Office",
-         year != 2022)%>%
+         year != 2022,
+         detection == T)%>%
   mutate(hour = hour(time.win.det), minute = minute(time.win.det),second = second(time.win.det) ) %>%
   group_by(spec, format_hour = as.POSIXct(paste(hour, minute, second, sep = ":"), format = "%H:%M:%S"), year =   year(time.win.det))%>%
-  reframe(n.det = sum(n.record)) %>% #macht das so Sinn?
+  reframe(n.det = n()) %>% #macht das so Sinn?
   mutate(day.cat = ifelse(hour(format_hour) < 12, "morgens", "abends") %>%
             factor(., levels = c("morgens", "abends"))) %>% 
   filter(spec == x) 
+
   
+
+      
   meta.day.night = to.plot %>% group_by(day.cat) %>% reframe(n.cat = n())
   day.cat.to.remove = meta.day.night$day.cat[meta.day.night$n.cat < 20]
   to.plot = to.plot %>% filter(!day.cat %in% day.cat.to.remove)
@@ -251,8 +270,8 @@ day.plot = function(x){
         plot.margin = margin(0.3,1,0.3,0.3, "cm"),
         plot.title = element_text(hjust = 0.5,  size = 16, color = "grey40"), 
         legend.title = element_blank(), 
-        legend.position = c(0.2, 0.95), 
-        legend.text = element_text(size=12, color = "grey40"),
+        legend.position = c(0.25, 0.95), 
+        legend.text = element_text(size=10, color = "grey40"),
         legend.spacing.x = unit(.1, 'cm'),
         legend.background = element_rect(fill = 'transparent'),
         axis.title = element_text(size = 14, color = "grey40"),
@@ -276,14 +295,15 @@ Auf dieser Website veranschaulichen wir, welche Vogelarten am häufigsten in den
 
 # Erfassung im Park Sanssouci
 
-Für die semi-automatisierte Erfassung von Vogelarten nutzen wir Audiodetektoren, die zu den Hauptgesangszeiten der Vögel - morgens und abends im Frühling (April - Mai) - Vogelstimmen aufzeichnen. Diesen Daten werden dann durch Bestimmungsalgorithmen Vogelarten zu geordnet. Um die Ergebnisse der Algorithmen als "Detektionen" zu werten, stellen wir strenge Kriterien an sie. So nutzen wir beispielsweise nur Daten, bei denen sich die Algorithmen sicher sind und die heimische und regelmäßig erkannte Arten umfassen. Eine Detektion bedeutet, dass eine Art an einem Standort innerhalb von 10 Minuten mindestens einmal sicher erkannt wurde.
+Für die semi-automatisierte Erfassung von Vogelarten nutzen wir Audiodetektoren, die zu den Hauptgesangszeiten der Vögel - morgens und abends im Frühling (April - Mai) - Vogelstimmen aufzeichnen. Diesen Daten werden dann durch Bestimmungsalgorithmen Vogelarten zu geordnet. Um die Ergebnisse der Algorithmen als "Detektionen" zu werten, stellen wir strenge Kriterien an sie. So nutzen wir beispielsweise nur Daten, bei denen sich die Algorithmen sicher sind und die heimische und regelmäßig erkannte Arten umfassen. Eine Detektion bedeutet, dass eine Art an einem Standort innerhalb von 10 Minuten mindestens zweimal sicher erkannt wurde. Da Stare gerne und gut den Gesang anderer Arten imitieren, nutzen wir keine Detektionen aus 10-Minuten-Zeitfenstern während derer Stare öfter erkannt wurden.
 
 Zwar können uns die Ergebnisse keine Auskunft darüber geben, wieviele Vögel genau da gesungen haben, aber sie helfen uns zu erkennen, welche Arten zu welchen Zeiten aktiv waren. Darüber hinaus zeigen sie uns, wie sich die verschiedenen Bereiche im Park hinsichtlich ihrer Vogelgemeinschaft unterscheiden. Die folgende Karte veranschaulicht die Standorte im Park Sanssouci, die wir akustisch betrachten.  
 
 ```{r out.width="600px", text.align="center"}
 box_locs_map = box_locs %>% group_by(group_name) %>% mutate(lat_group = mean(lat), lon_group = mean(lon))
 box_locs_map = box_locs_map[,c(7,8,9)] %>% unique()
-box_locs_map$top_spec = c("Ringeltaube", "Nachtigall", "Trauerschnäpper", "Amsel", "Waldkauz", "Kohlmeise", "Rotkehlchen")
+box_locs_map = box_locs_map %>% left_join(top_specs_per_loc)
+box_locs_map$top_spec = box_locs_map$deutsch
 #box_locs_map$popup = paste0(box_locs_map$group_name, " <br><a href =#", "artenlisten", ">Artenlisten</a>", " <br><a href =#", tolower(box_locs_map$top_spec), ">Häufigste Art: ", box_locs_map$top_spec, "</a>")
 box_locs_map$popup = paste0(box_locs_map$group_name, " <br><a href =#", tolower(gsub(" ", "-", box_locs_map$group_name)), ">Artenliste</a>", " <br><a href =#", tolower(box_locs_map$top_spec), ">Häufige Art: ", box_locs_map$top_spec, "</a>")
 #box_locs_map$popup = paste0("Standort ", box_locs_map$group, " <br><a href =#standort-", box_locs_map$group, ">Artenliste</a>")
@@ -312,13 +332,29 @@ leaflet(width = "95%", height = 500) %>%
 
 # Artenlisten 
 
-Die folgenden Übersichten zeigen jeweils die 5 Arten, die über alle Jahre hinweg am häufigsten detektiert wurden. Dazu finden Sie jährliche Listen, die jeweils die 10 am häufigsten detektierten Arten zeigen. Die Informationen sind nach Jahr und nach Standort aufgeteilt.
+Die folgenden Übersichten zeigen jeweils die 5 Arten, die über alle Jahre hinweg am häufigsten detektiert wurden. Dazu finden Sie jährliche Listen, die jeweils die 20 am häufigsten detektierten Arten zeigen. Die Informationen sind nach Jahr und nach Standort aufgeteilt.
 
 ## Artenliste aller Standorte  {.tabset}
 
 ### Übersicht
 ```{r plot_interann, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent'), fig.cap="Die jährlichen Detektionen der 5 Arten, die insgesamt über alle Erfassungsjahre am häufigsten detektiert wurden."}
 location.plot("alle Standorte")
+```
+### 2026
+```{r Artenliste2026, results="asis",echo=FALSE}
+artenliste = left_join(artenliste_raw, box_locs[,c(1,5)])  %>%
+  filter(year == 2026)  %>% group_by(spec) %>% reframe(n = sum(n.det)) %>%
+  merge(translation[,5:7])  %>%
+  arrange(desc(n))
+
+artenliste$link = paste0(" <br><a href =#", tolower(artenliste$deutsch), ">", artenliste$deutsch,"</a>")
+  no.info.specs = which(!artenliste$deutsch %in% included.specs)
+  artenliste$link[no.info.specs] = artenliste$deutsch[no.info.specs] 
+artenliste$ebird.species = paste0("<i>", artenliste$ebird.species, "</i>")
+colnames(artenliste) = c("spec", "Anzahl Detektionen", "Art (Wisschenschaftlich)", "Art (Deutsch)", "Art (Deutsch)")
+artenliste = artenliste[, c(5,3,2)]
+
+knitr::kable(artenliste[1:20,])
 ```
 
 ### 2025
@@ -335,7 +371,7 @@ artenliste$ebird.species = paste0("<i>", artenliste$ebird.species, "</i>")
 colnames(artenliste) = c("spec", "Anzahl Detektionen", "Art (Wisschenschaftlich)", "Art (Deutsch)", "Art (Deutsch)")
 artenliste = artenliste[, c(5,3,2)]
 
-knitr::kable(artenliste[1:10,])
+knitr::kable(artenliste[1:20,])
 ```
 
 ### 2024
@@ -352,7 +388,7 @@ artenliste$ebird.species = paste0("<i>", artenliste$ebird.species, "</i>")
 colnames(artenliste) = c("spec", "Anzahl Detektionen", "Art (Wisschenschaftlich)", "Art (Deutsch)", "Art (Deutsch)")
 artenliste = artenliste[, c(5,3,2)]
 
-knitr::kable(artenliste[1:10,])
+knitr::kable(artenliste[1:20,])
 ```
 
 ### 2023
@@ -369,7 +405,7 @@ artenliste$ebird.species = paste0("<i>", artenliste$ebird.species, "</i>")
 colnames(artenliste) = c("spec", "Anzahl Detektionen", "Art (Wisschenschaftlich)", "Art (Deutsch)", "Art (Deutsch)")
 artenliste = artenliste[, c(5,3,2)]
 
-knitr::kable(artenliste[1:10,])
+knitr::kable(artenliste[1:20,])
 ```
 
 <!-- ### 2022 -->
@@ -386,7 +422,7 @@ knitr::kable(artenliste[1:10,])
 <!-- colnames(artenliste) = c("spec", "Anzahl Detektionen", "Art (Wisschenschaftlich)", "Art (Deutsch)", "Art (Deutsch)") -->
 <!-- artenliste = artenliste[, c(5,3,2)] -->
 
-<!-- knitr::kable(artenliste[1:10,]) -->
+<!-- knitr::kable(artenliste[1:20,]) -->
 <!-- ``` -->
 
 
@@ -397,26 +433,32 @@ knitr::kable(artenliste[1:10,])
 location.plot("Rehgarten")
 ```
 
+### 2026
+```{r standort12026, results="asis",echo=FALSE}
+artenliste = artenliste.standort.jahr(1, 2026)
+knitr::kable(artenliste[1:20,])
+```
+
 ### 2025
 ```{r standort12025, results="asis",echo=FALSE}
 artenliste = artenliste.standort.jahr(1, 2025)
-knitr::kable(artenliste[1:10,])
+knitr::kable(artenliste[1:20,])
 ```
 
 ### 2024
 ```{r standort12024, results="asis",echo=FALSE}
 artenliste = artenliste.standort.jahr(1, 2024)
-knitr::kable(artenliste[1:10,])
+knitr::kable(artenliste[1:20,])
 ```
 ### 2023
 ```{r standort12023, results="asis",echo=FALSE}
 artenliste = artenliste.standort.jahr(1, 2023)
-knitr::kable(artenliste[1:10,])
+knitr::kable(artenliste[1:20,])
 ```
 <!-- ### 2022 -->
 <!-- ```{r standort12022, results="asis",echo=FALSE} -->
 <!-- artenliste = artenliste.standort.jahr(1, 2022) -->
-<!-- knitr::kable(artenliste[1:10,]) -->
+<!-- knitr::kable(artenliste[1:20,]) -->
 <!-- ``` -->
 
 
@@ -427,26 +469,31 @@ knitr::kable(artenliste[1:10,])
 location.plot("Fasanerie 1")
 ```
 
+### 2026
+```{r standort22026, results="asis",echo=FALSE}
+artenliste = artenliste.standort.jahr(2, 2026)
+knitr::kable(artenliste[1:20,])
+```
 ### 2025
 ```{r standort22025, results="asis",echo=FALSE}
 artenliste = artenliste.standort.jahr(2, 2025)
-knitr::kable(artenliste[1:10,])
+knitr::kable(artenliste[1:20,])
 ```
 ### 2024
 ```{r standort22024, results="asis",echo=FALSE}
 artenliste = artenliste.standort.jahr(2, 2024)
-knitr::kable(artenliste[1:10,])
+knitr::kable(artenliste[1:20,])
 ```
 ### 2023
 ```{r standort22023, results="asis",echo=FALSE}
 artenliste = artenliste.standort.jahr(2, 2023)
-knitr::kable(artenliste[1:10,])
+knitr::kable(artenliste[1:20,])
 ```
 
 <!-- ### 2022 -->
 <!-- ```{r standort22022, results="asis",echo=FALSE} -->
 <!-- artenliste = artenliste.standort.jahr(2, 2022) -->
-<!-- knitr::kable(artenliste[1:10,]) -->
+<!-- knitr::kable(artenliste[1:20,]) -->
 <!-- ``` -->
 
 ## Fasanerie 2  {.tabset}
@@ -457,27 +504,32 @@ location.plot("Fasanerie 2")
 ```
 
 
+### 2026
+```{r standort32026, results="asis",echo=FALSE}
+artenliste = artenliste.standort.jahr(3, 2026)
+knitr::kable(artenliste[1:20,])
+```
 ### 2025
 ```{r standort32025, results="asis",echo=FALSE}
 artenliste = artenliste.standort.jahr(3, 2025)
-knitr::kable(artenliste[1:10,])
+knitr::kable(artenliste[1:20,])
 ```
 ### 2024
 ```{r standort32024, results="asis",echo=FALSE}
 artenliste = artenliste.standort.jahr(3, 2024)
-knitr::kable(artenliste[1:10,])
+knitr::kable(artenliste[1:20,])
 ```
 
 ### 2023
 ```{r standort32023, results="asis",echo=FALSE}
 artenliste = artenliste.standort.jahr(3, 2023)
-knitr::kable(artenliste[1:10,])
+knitr::kable(artenliste[1:20,])
 ```
 
 <!-- ### 2022 -->
 <!-- ```{r standort32022, results="asis",echo=FALSE} -->
 <!-- artenliste = artenliste.standort.jahr(3, 2022) -->
-<!-- knitr::kable(artenliste[1:10,]) -->
+<!-- knitr::kable(artenliste[1:20,]) -->
 <!-- ``` -->
 
 ## Hippodrom  {.tabset}
@@ -488,28 +540,34 @@ location.plot("Hippodrom")
 ```
 
 
+### 2026
+```{r standort42026, results="asis",echo=FALSE}
+artenliste = artenliste.standort.jahr(4, 2026)
+knitr::kable(artenliste[1:20,])
+```
+
 ### 2025
-```{r standort42054, results="asis",echo=FALSE}
+```{r standort42025, results="asis",echo=FALSE}
 artenliste = artenliste.standort.jahr(4, 2025)
-knitr::kable(artenliste[1:10,])
+knitr::kable(artenliste[1:20,])
 ```
 
 ### 2024
 ```{r standort42024, results="asis",echo=FALSE}
 artenliste = artenliste.standort.jahr(4, 2024)
-knitr::kable(artenliste[1:10,])
+knitr::kable(artenliste[1:20,])
 ```
 
 ### 2023
 ```{r standort42023, results="asis",echo=FALSE}
 artenliste = artenliste.standort.jahr(4, 2023)
-knitr::kable(artenliste[1:10,])
+knitr::kable(artenliste[1:20,])
 ```
 
 <!-- ### 2022 -->
 <!-- ```{r standort42022, results="asis",echo=FALSE} -->
 <!-- artenliste = artenliste.standort.jahr(4, 2022) -->
-<!-- knitr::kable(artenliste[1:10,]) -->
+<!-- knitr::kable(artenliste[1:20,]) -->
 <!-- ``` -->
 
 ## Hopfengarten 1  {.tabset}
@@ -519,27 +577,32 @@ knitr::kable(artenliste[1:10,])
 location.plot("Hopfengarten 1")
 ```
 
+### 2026
+```{r standort52026, results="asis",echo=FALSE}
+artenliste = artenliste.standort.jahr(5, 2026)
+knitr::kable(artenliste[1:20,])
+```
 ### 2025
 ```{r standort52025, results="asis",echo=FALSE}
 artenliste = artenliste.standort.jahr(5, 2025)
-knitr::kable(artenliste[1:10,])
+knitr::kable(artenliste[1:20,])
 ```
 ### 2024
 ```{r standort52024, results="asis",echo=FALSE}
 artenliste = artenliste.standort.jahr(5, 2024)
-knitr::kable(artenliste[1:10,])
+knitr::kable(artenliste[1:20,])
 ```
 
 ### 2023
 ```{r standort52023, results="asis",echo=FALSE}
 artenliste = artenliste.standort.jahr(5, 2023)
-knitr::kable(artenliste[1:10,])
+knitr::kable(artenliste[1:20,])
 ```
 
 <!-- ### 2022 -->
 <!-- ```{r standort52022, results="asis",echo=FALSE} -->
 <!-- artenliste = artenliste.standort.jahr(5, 2022) -->
-<!-- knitr::kable(artenliste[1:10,]) -->
+<!-- knitr::kable(artenliste[1:20,]) -->
 <!-- ``` -->
 
 ## Hopfengarten 2  {.tabset}
@@ -549,27 +612,32 @@ knitr::kable(artenliste[1:10,])
 location.plot("Hopfengarten 2")
 ```
 
+### 2026
+```{r standort62026, results="asis",echo=FALSE}
+artenliste = artenliste.standort.jahr(6, 2026)
+knitr::kable(artenliste[1:20,])
+```
 ### 2025
 ```{r standort62025, results="asis",echo=FALSE}
 artenliste = artenliste.standort.jahr(6, 2025)
-knitr::kable(artenliste[1:10,])
+knitr::kable(artenliste[1:20,])
 ```
 ### 2024
 ```{r standort62024, results="asis",echo=FALSE}
 artenliste = artenliste.standort.jahr(6, 2024)
-knitr::kable(artenliste[1:10,])
+knitr::kable(artenliste[1:20,])
 ```
 
 ### 2023
 ```{r standort62023, results="asis",echo=FALSE}
 artenliste = artenliste.standort.jahr(6, 2023)
-knitr::kable(artenliste[1:10,])
+knitr::kable(artenliste[1:20,])
 ```
 
 <!-- ### 2022 -->
 <!-- ```{r standort62022, results="asis",echo=FALSE} -->
 <!-- artenliste = artenliste.standort.jahr(6, 2022) -->
-<!-- knitr::kable(artenliste[1:10,]) -->
+<!-- knitr::kable(artenliste[1:20,]) -->
 <!-- ``` -->
 
 ## Marlygarten  {.tabset}
@@ -579,30 +647,48 @@ knitr::kable(artenliste[1:10,])
 location.plot("Marlygarten")
 ```
 
+### 2026
+```{r standort72026, results="asis",echo=FALSE}
+artenliste = artenliste.standort.jahr(7, 2026)
+knitr::kable(artenliste[1:20,])
+```
 ### 2025
 ```{r standort72025, results="asis",echo=FALSE}
 artenliste = artenliste.standort.jahr(7, 2025)
-knitr::kable(artenliste[1:10,])
+knitr::kable(artenliste[1:20,])
 ```
 
 ### 2024
 ```{r standort72024, results="asis",echo=FALSE}
 artenliste = artenliste.standort.jahr(7, 2024)
-knitr::kable(artenliste[1:10,])
+knitr::kable(artenliste[1:20,])
 ```
 
 ### 2023
 ```{r standort72023, results="asis",echo=FALSE}
 artenliste = artenliste.standort.jahr(7, 2023)
-knitr::kable(artenliste[1:10,])
+knitr::kable(artenliste[1:20,])
 ```
 
 <!-- ### 2022 -->
 <!-- ```{r standort72022, results="asis",echo=FALSE} -->
 <!-- artenliste = artenliste.standort.jahr(7, 2022) -->
-<!-- knitr::kable(artenliste[1:10,]) -->
+<!-- knitr::kable(artenliste[1:20,]) -->
 <!-- ``` -->
 
+
+## Sellowiesen {.tabset}
+
+### Übersicht
+```{r plot_interannsello, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent'), fig.cap="Die jährlichen Detektionen der 5 Arten, die insgesamt über alle Erfassungsjahre am häufigsten detektiert wurden."}
+location.plot("Sellowiesen")
+```
+
+### 2026
+```{r standort82026, results="asis",echo=FALSE}
+artenliste = artenliste.standort.jahr(8, 2026)
+knitr::kable(artenliste[1:20,])
+```
 
 # Artensteckbriefe
 
@@ -970,6 +1056,30 @@ Mehr Infos zur Kohlmeise findet ihr hier:
 <a href="https://ebird.org/species/gretit1" target ="_blank"> Informationen bei eBird </a>
 
 
+## Kuckuck
+```{r image_Kuckuck, fig.cap = "Kuckuck (Cuculus canorus). Foto von [Andy Morffew](https://www.flickr.com/photos/andymorffew/55256698658/in/album-72177720308004703)", out.width="75%" }
+knitr::include_graphics("images/cuculus_canorus.webp", dpi = 75)
+```
+
+Sein markanter "ku-kuck" Ruf gibt diesem Vogel seinen Namen und ist weit bekannt und gilt als Frühlingsbote. Kuckucks kümmern sich nicht selber um ihren Nachwuchs, sondern legen ihre Eier in fremde Nester anderer Vogelarten, häufig von Grasmücken oder Rohrsängern. Dafür wird aus dem fremden Nest ein Ei rausgeworfen und ein eigenes gelegt, dafür können Kuckucks sogar die Farbe und Göße ihrer Eier anpassen. Das äußere Erscheinungsbild der Kuckucks ist mit der hauptsächlich grauen Färbung weniger markant als sein Ruf und sein Verhalten. Lediglich der Bauch ist weiß mit schwarzen Streifen, die Augen stechen mit ihrem gelben Ton hervor. Kuckucks sind Zugvögel und überwintern im tropischen Afrika.
+
+```{r info_kuckkuck, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
+year.plot("comcuc")
+day.plot("comcuc")
+```
+
+Das sind die Rufe der Kuckucks:
+```{r}
+#html_tag_audio("audio/Kohlmeise_2min_SMU02919_20240403_050000.mp3", type = "mp3")
+```
+
+Mehr Infos zum Kuckuck findet ihr hier:
+
+<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/kuckuck/" target ="_blank"> Informationen vom NABU </a>
+
+<a href="https://ebird.org/species/comcuc" target ="_blank"> Informationen bei eBird </a>
+
+
 
 ## Mauersegler
 ```{r image_Mauersegler, fig.cap = "Mauersegler (Apus apus). Foto von [Mahmoud Yahyaoui](https://www.pexels.com/photo/flying-common-swift-bird-21852469/)", out.width="75%" }
@@ -1107,8 +1217,8 @@ Mehr Infos zur Nebelkrähe findet ihr hier:
 
 ## Pirol
  
-```{r image_Pirol, fig.cap = "Pirol (Oriolus oriolus). Foto von [Pok Rie](https://www.pexels.com/photo/black-naped-oriole-on-tree-branch-in-forest-30912678/)", out.width="75%" }
-knitr::include_graphics("images/Oriolus-oriolus.webp", dpi = 75)
+```{r image_Pirol, fig.cap = "Pirol (Oriolus oriolus). Foto von [Kookaburra 81](https://commons.wikimedia.org/wiki/File%3AOriolus_oriolus_-_Tarn.jpg)", out.width="75%" }
+knitr::include_graphics("images/Oriolus_oriolus.webp", dpi = 75)
 ```
 
 Pirole sind aufgrund ihrer leuchtend gelben Färbung und dem Kontrast zu den schwarzen Flügeln, Schwanz und Zügen zwischen den Augen gut zu erkennen. Allerdings sind sie sehr scheue Vögel, die sich in den Baumkronen von lichten Wäldern und Parks verstecken. Sie sind Zugvögel und überwintern im tropischen Afrika.
@@ -1340,6 +1450,33 @@ Mehr Infos zum Star findet ihr hier:
 <a href="https://ebird.org/species/eursta" target ="_blank"> Informationen bei eBird </a>
 
 
+## Stockente
+
+```{r image_stockente, fig.cap = "Stockente (Anas platyrhynchos). Foto von [Tommes Frites] (https://www.pexels.com/photo/mallard-duck-in-stream-20903226/)" , out.width="75%"}
+knitr::include_graphics("images/anas_platyrhynchos.webp", dpi = 75)
+```
+
+Stockenten findet man häufig an Teichen, Flüssen und Seen. Sie ernähren sich von Pflanzen im Wasser, an Ufer und an Land, sowie von kleinen Tieren. Ihr Name kommt daher, dass sie ihre Nester gerne auf Wieden oder anderen Bäumen baut, die auf Stock gestzt sind, das heißt stark zurück geschnitten wurden. Die Geschlechter sehen bei Stockenten unterschiedlich aus. Während der Erpel, also das Männchen, neben dem grauen Körper, der braunen Brust und einem weißen Ring um den Hals einen schillernd grünen Kopf hat, ist das Weibchen einheitlicher beigebraun mit brauner Musterung gefärbt. Sie sind häufig als Paar unterwegs und bleiben das ganze Jahr über in Deutschland.
+
+
+```{r info_stockente, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
+year.plot("mallar3")
+day.plot("mallar3")
+```
+
+So klingt das Quaken einer Stockente:
+```{r}
+#html_tag_audio("audio/Trauerschnaepper.mp3", type = "mp3")
+```
+
+Mehr Infos zur Stockente findet ihr hier:
+
+<a href="https://www.nabu.de/tiere-und-pflanzen/voegel/portraets/stockente/" target ="_blank"> Informationen vom NABU </a>
+
+<a href="https://ebird.org/species/mallar3" target ="_blank"> Informationen bei eBird </a>
+
+
+
 ## Trauerschnäpper
 
 ```{r image_trauerschnaepper, fig.cap = "Trauerschnäpper (Ficedula hypoleuca). Foto von [Jürgen](https://www.pexels.com/photo/warbler-perching-on-branch-16944312/)" , out.width="75%"}
@@ -1449,11 +1586,11 @@ Mehr Infos zum Zaunkönig findet ihr hier:
 
 ## Zilpzalp
 
-```{r image_Zilpzalp, fig.cap = "Zilpzalp (Phylloscopus collybita). Foto von [Connor Martin](https://www.pexels.com/photo/close-up-shot-of-yawning-common-chiffchaff-bird-9581068/)" , out.width="75%"}
+```{r image_Zilpzalp, fig.cap = "Zilpzalp (Phylloscopus collybita). Foto von Tommes Frites (https://www.pexels.com/photo/european-chiffchaff-perched-on-spring-branch-31457196/)" , out.width="75%"}
 knitr::include_graphics("images/Phylloscopus-collybita.webp", dpi = 75)
 ```
 
-Der Zilpzalp sieht zwar mit seinem grünoliven Kleid zwar unscheinbar aus, ist aber im Frühling und Sommer viel zu hören. Seinen Namen verdankt er seinem Gesang, der wie "zilp zalp" klingt. Sie sind häufige Vögel, die überall vorkommen, wo hohe Bäume zu finden sind. 
+Der Zilpzalp sieht mit seinem grünoliven Kleid zwar unscheinbar aus, ist aber im Frühling und Sommer viel zu hören. Seinen Namen verdankt er seinem Gesang, der wie "zilp zalp" klingt. Sie sind häufige Vögel, die überall vorkommen, wo hohe Bäume zu finden sind. 
 
 ```{r info_Zilpzalp, results="asis",echo=FALSE, warning=FALSE, dev.args = list(bg = 'transparent')}
 year.plot("comchi1")

@@ -1611,24 +1611,18 @@ Mehr Infos zum Zilpzalp findet ihr hier:
 
 # Kooperationen
 
-Die Algorithmen, die für die Bestimmung der Vogelstimmen verwendet wurden, sind [Naturblick](https://naturblick.museumfuernaturkunde.berlin/), entwickelt vom Museum für Naturkunde Berlin, und [Birdnet](https://birdnet.cornell.edu/), entwickelt vom Cornell Lab of Ornithology. Beide sind auch als Bestimmungsapps verfügbar.
+Für die Bestimmung der Vogelstimmen wurde [Birdnet](https://birdnet.cornell.edu/) entwickelt vom Cornell Lab of Ornithology in der Version 2.4 verwendet. Birdnet ist auch als Bestimmungsapp verfügbar.
 
 Das Projekt erfolgt mit freundlicher Unterstützung der [Stiftung Preußische Schlösser und Gärten Berlin-Brandenburg](https://www.spsg.de/startseite).
 
 <div class="image-row">
-<a href="https://naturblick.museumfuernaturkunde.berlin/" target="_blank">
-  <img src="images/naturblick-logo.webp" alt="Logo Naturblick"
-  height=110><br>
- Naturblick
-</a>
-
 <a href="https://birdnet.cornell.edu/" target="_blank">
   <img src="images/birdnet-logo.webp" alt="Logo Birdnet" height=110><br>
    Birdnet
 </a>
 
 <a href="https://www.spsg.de/startseite" target="_blank">
-  <img src="images/SPSG-Logo.webp" alt="Logo SPSG" height=110><br>
+  <img src="images/SPSG.webp" alt="Logo SPSG" height=110><br>
   Stiftung Preußische Schlösser <br>und Gärten Berlin-Brandenburg
 </a>
 
